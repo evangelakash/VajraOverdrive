@@ -54,15 +54,15 @@ class TransitionScreenshotTest {
                     flow = new Flow();
                     flow.set(new HomeScreen(flow, ui, batch)); // exactly VajraGame's boot
 
-                    // 1. the idle title: the gold name under the valance and the gold PLAY row
+                    // 1. the idle title: the bronze name under the ruler and the lit PLAY leaf
                     int[] home = frame();
                     writePng(home, "build/trans-home.png");
                     check(gold(home, 330, 950, 600, 650) > 50,
                             "home frame shows the gold name (" + gold(home, 330, 950, 600, 650) + " px)",
                             failures);
-                    // PLAY is the selected row: its plaque and text sit at UI 440-470
-                    check(gold(home, 560, 720, 440, 470) > 30,
-                            "home frame shows the gold PLAY row (" + gold(home, 560, 720, 440, 470) + " px)",
+                    // PLAY is the selected row: the pale leaf in hand sits at UI 482-518
+                    check(gold(home, 560, 720, 484, 516) > 30,
+                            "home frame shows the lit PLAY leaf (" + gold(home, 560, 720, 484, 516) + " px)",
                             failures);
 
                     // 1b. the PROFILE row opens the pilot's page; ESC hands back home

@@ -270,9 +270,9 @@ class HudScreenshotTest {
     /** The hangar is now opaque and tabbed (ShopUi). These sample the real panel rects, so if
      *  the layout moves they follow it. Each tab is checked on its own scene. */
     private static void checkShop(int[] px, List<String> f) {
-        // opaque backdrop: the left margin, mid-height, must be the bazaar's night sky (about
-        // 16,11,40 there), not the world showing through. The corner is under the valance now.
-        expectNear(px, 6, 400, 16, 11, 40, 24, "opaque hangar backdrop", f);
+        // opaque backdrop: the left margin, mid-height, must be the dark earth (about 24,17,13
+        // there), not the world showing through.
+        expectNear(px, 6, 400, 24, 17, 13, 14, "opaque hangar backdrop", f);
         for (int i = 0; i < ShopUi.TAB_NAMES.length; i++) {
             float y = ShopUi.railY(i);
             check(countLit(px, (int) ShopUi.RAIL_X, (int) ShopUi.DIV_X,

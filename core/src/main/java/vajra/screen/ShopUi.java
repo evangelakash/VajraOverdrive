@@ -126,13 +126,13 @@ public final class ShopUi {
     private static final String[] STAT_NAMES = { "HP", "SPEED", "TURN" };
 
     // =============================================================== palette (Puranic)
-    private static final float[] SAF = Puranic.SAFFRON;      // saffron: selected, actionable
-    private static final float[] BRASS = Puranic.BRASS;       // brass: hairlines, quiet type
-    private static final float[] CREAM = Puranic.IVORY;       // ivory: the words
-    private static final float[] PEACOCK = Puranic.PEACOCK;   // a gain
-    private static final float[] ROSE = Puranic.ROSE;         // a loss
-    private static final float[] LAVENDER = Puranic.LAVENDER; // the hull you are flying
-    private static final float[] INDIGO = Puranic.INDIGO;
+    private static final float[] SAF = Puranic.OCHRE;      // saffron: selected, actionable
+    private static final float[] BRASS = Puranic.COPPER;       // brass: hairlines, quiet type
+    private static final float[] CREAM = Puranic.BONE;       // ivory: the words
+    private static final float[] PEACOCK = Puranic.VERDIGRIS;   // a gain
+    private static final float[] ROSE = Puranic.TERRACOTTA;         // a loss
+    private static final float[] LAVENDER = Puranic.ASH; // the hull you are flying
+    private static final float[] INDIGO = Puranic.EARTH;
     private static final float[] DEEP = Puranic.NIGHT;        // the night, dark end
     private static final float[] PANEL = Puranic.PLATE;       // a card's lacquered fill
 
@@ -1066,34 +1066,19 @@ public final class ShopUi {
 
     private void railShapes() {
         vhair(DIV_X, BODY_Y - 8, BODY_TOP - BODY_Y + 16, 0.22f);
-        // a cord down the rail, and each section a palm-leaf board hung from it
-        float cordX = RAIL_X + 4, top = BODY_TOP + 8, bottom = railY(TAB_NAMES.length - 1) - 22;
-        Puranic.c(ui, Puranic.BRASS, 0.8f);
-        ui.shapes.rect(cordX - 1, bottom, 2, top - bottom);
-        Puranic.c(ui, Puranic.GOLD, 1f);
-        Puranic.disc(ui, cordX, top, 3.4f);
+        // the sections are leaves of a pothi: one cord runs through the hole in each
+        float x = RAIL_X + 6, w = DIV_X - 10 - x, h = 28, cordX = x + 12;
+        float top = railY(0) + 22, bottom = railY(TAB_NAMES.length - 1) - 22;
+        Puranic.cord(ui, cordX, bottom, top);
         for (int i = 0; i < TAB_NAMES.length; i++) {
-            float cy = railY(i), x = RAIL_X + 12, w = DIV_X - 10 - x, h = 28;
+            float cy = railY(i);
             boolean on = i == tab, hot = hoverRegion == TAB && hoverRow == i && probeSub < 0;
-            Puranic.c(ui, Puranic.BRASS, 0.85f);
-            Puranic.line(ui, cordX, cy, x + 4, cy, 1.4f);
-            Puranic.c(ui, Puranic.GOLD, 1f);
-            Puranic.disc(ui, cordX, cy, 2.6f);
-            if (on) {
-                tone(SAF, 0.95f);
-                Puranic.pill(ui, x, cy - h / 2f, w, h, 9);
-                Puranic.c(ui, Puranic.GOLD, 1f);
-                Puranic.arcFrame(ui, x, cy - h / 2f, w, h, 9, 1.6f);
-            } else {
-                tone(Puranic.SANDAL, hot ? 0.95f : 0.72f);
-                Puranic.pill(ui, x, cy - h / 2f, w, h, 9);
-                Puranic.c(ui, Puranic.BRASS, hot ? 1f : 0.7f);
-                Puranic.arcFrame(ui, x, cy - h / 2f, w, h, 9, 1.2f);
-            }
+            Puranic.leaf(ui, x, cy - h / 2f, w, h,
+                    on ? Puranic.LEAF : hot ? Puranic.LEAF_DARK : Puranic.BARK, on ? 1f : 0.95f, on);
         }
         for (int g = 0; g < GROUP_NAMES.length; g++) {
             float gw = textW(GROUP_NAMES[g]);
-            hair(RAIL_X + gw + 22, BODY_TOP - GROUP_DY[g], DIV_X - 18 - RAIL_X - gw - 22, 0.25f);
+            hair(RAIL_X + gw + 40, BODY_TOP - GROUP_DY[g], DIV_X - 18 - RAIL_X - gw - 40, 0.25f);
         }
     }
 
@@ -1342,7 +1327,7 @@ public final class ShopUi {
 
     private void drawHeader(SpriteBatch b, Hangar h) {
         float hy = HEAD_Y + 5 - cap / 2f; // text top rides HEAD_Y + 5, as the wallet always has
-        ui.head.setColor(Puranic.GOLD[0], Puranic.GOLD[1], Puranic.GOLD[2], 1f);
+        ui.head.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], 1f);
         ui.head.draw(b, "ARMOURY OF ATALA", M0, hy + ui.head.getCapHeight() / 2f);
         float nameW = ui.measure(ui.head, "ARMOURY OF ATALA");
         ui.head.setColor(1, 1, 1, 1);
@@ -1366,13 +1351,13 @@ public final class ShopUi {
 
     private void railText(SpriteBatch b, Hangar h, int loka) {
         for (int g = 0; g < GROUP_NAMES.length; g++)
-            tinted(b, GROUP_NAMES[g], RAIL_X + 14, BODY_TOP - GROUP_DY[g], -1, BRASS, 1f);
+            tinted(b, GROUP_NAMES[g], RAIL_X + 30, BODY_TOP - GROUP_DY[g], -1, BRASS, 1f);
         for (int i = 0; i < TAB_NAMES.length; i++) {
             float cy = railY(i);
             boolean on = i == tab;
-            tinted(b, TAB_NAMES[i], RAIL_X + 24, cy, -1, on ? Puranic.INK : CREAM, on ? 1f : 0.92f);
+            tinted(b, TAB_NAMES[i], RAIL_X + 38, cy, -1, on ? Puranic.INK : CREAM, 1f);
             String c = railCount(i, h, loka);
-            if (!c.isEmpty()) tinted(b, c, DIV_X - 20, cy, 1, on ? Puranic.INK : BRASS, 1f);
+            if (!c.isEmpty()) tinted(b, c, DIV_X - 36, cy, 1, on ? Puranic.INK : BRASS, 1f);
         }
     }
 

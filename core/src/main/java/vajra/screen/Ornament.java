@@ -2,66 +2,60 @@ package vajra.screen;
 
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 
-/** The menu screens' shared ornament, in the Puranic vocabulary: the hung valance across the
- *  top, a lotus in the lower corners, a lotus divider, and a palm-leaf plaque lit behind the
- *  selected row. Draws into an ALREADY-OPEN shape pass; it never begins or ends a batch.
+/** The menu screens' shared ornament, in the language of the pothi and the dial: a ruler scale
+ *  along the top edge, reticle brackets at the corners, a wheel-mark divider, and a palm leaf laid
+ *  behind the selected row. Draws into an ALREADY-OPEN shape pass; it never begins or ends a
+ *  batch.
  *
  *  <p>The method names are the ones the screens already call (frame, divider, markers,
- *  titleMarkers, diamond), so every menu picks the new look up at once. */
+ *  titleMarkers, diamond), so every menu picks the look up at once. */
 public final class Ornament {
     private static final GlyphLayout GL = new GlyphLayout();
 
     private Ornament() {}
 
     public static void gold(Ui ui, float a) {
-        Puranic.c(ui, Puranic.GOLD, a);
+        Puranic.c(ui, Puranic.BRONZE, a);
     }
 
-    /** The valance of cloth across the top, a gold rule inset round the page, and a lotus in each
-     *  lower corner. */
+    /** A dark band along the top with a measuring scale on its lower edge, and reticle brackets in
+     *  the four corners of the page. */
     public static void frame(Ui ui) {
-        float inset = 2 * UiTheme.SAFE_MARGIN, l = inset, r = Ui.UI_W - inset, b = inset;
-        Puranic.canopy(ui, false);
-        Puranic.c(ui, Puranic.BRASS, 0.45f);
-        ui.shapes.rect(l, b, r - l, 1);
-        ui.shapes.rect(l, b, 1, Ui.UI_H - 100 - b);
-        ui.shapes.rect(r - 1, b, 1, Ui.UI_H - 100 - b);
-        Puranic.lotus(ui, l, b, 11, Puranic.GOLD, 0.9f);
-        Puranic.lotus(ui, r, b, 11, Puranic.GOLD, 0.9f);
+        float inset = 2 * UiTheme.SAFE_MARGIN, l = inset, r = Ui.UI_W - inset, b = inset, t = Ui.UI_H - 30;
+        float strip = 22;
+        Puranic.c(ui, Puranic.NIGHT, 0.92f);
+        ui.shapes.rect(0, Ui.UI_H - strip, Ui.UI_W, strip);
+        Puranic.ruler(ui, 0, Ui.UI_W, Ui.UI_H - strip, false, 0.55f);
+        Puranic.wheel(ui, Ui.UI_W / 2f, Ui.UI_H - strip / 2f, 6, Puranic.BRONZE, 0.9f);
+        Puranic.c(ui, Puranic.BRONZE, 0.65f);
+        Puranic.reticle(ui, l, b, r - l, t - b, 26, 2f);
     }
 
-    /** Line, lotus, line — the divider. `half` sets its span. */
+    /** Hairline, wheel, hairline — the divider. `half` sets its span. */
     public static void divider(Ui ui, float cx, float y, float half, float alpha) {
         Puranic.divider(ui, cx, y, half, alpha);
     }
 
-    /** The palm-leaf plaque lit behind a row's label, a lotus bud either side. Measures the text
-     *  so the plaque fits whatever the row says. */
+    /** The leaf laid behind a row's label, wide enough for the spaced text. */
     public static void markers(Ui ui, float cx, String label, float rowY) {
         GL.setText(ui.menu, label);
         float capY = rowY - GL.height / 2f;
-        float w = GL.width + 110, h = 34;
-        float x = cx - w / 2f, y = capY - h / 2f;
-        Puranic.c(ui, Puranic.SAFFRON, 0.20f);
-        Puranic.pill(ui, x, y, w, h, 17);
-        Puranic.c(ui, Puranic.GOLD, 0.95f);
-        Puranic.arcFrame(ui, x, y, w, h, 17, 1.6f);
-        Puranic.lotus(ui, x + 18, capY, 7, Puranic.MARIGOLD, 1f);
-        Puranic.lotus(ui, x + w - 18, capY, 7, Puranic.MARIGOLD, 1f);
+        float w = GL.width + (label.length() - 1) * Template.ROW_TRACK + 120, h = 36;
+        Puranic.leaf(ui, cx - w / 2f, capY - h / 2f, w, h, Puranic.LEAF, 1f, true);
     }
 
-    /** Lotus [HEADING] lotus — the heading's own flowers, measured wide enough (tracking
-     *  included) to clear it. The text is the batch pass's business. Shape pass. */
+    /** Wheel [HEADING] wheel — the heading's own marks, measured wide enough (tracking included)
+     *  to clear it. The text is the batch pass's business. Shape pass. */
     public static void titleMarkers(Ui ui, String heading, float headingY) {
         GL.setText(ui.title, heading);
         float w = GL.width + (heading.length() - 1) * Template.TITLE_TRACK;
         float y = headingY - ui.title.getData().capHeight / 2f;
-        float off = w / 2f + 34;
-        Puranic.lotus(ui, Template.COL - off, y, 11, Puranic.GOLD, 1f);
-        Puranic.lotus(ui, Template.COL + off, y, 11, Puranic.GOLD, 1f);
-        Puranic.c(ui, Puranic.GOLD, 0.7f);
-        ui.shapes.rect(Template.COL - off - 70, y - 0.7f, 48, 1.4f);
-        ui.shapes.rect(Template.COL + off + 22, y - 0.7f, 48, 1.4f);
+        float off = w / 2f + 32;
+        Puranic.wheel(ui, Template.COL - off, y, 9, Puranic.BRONZE, 1f);
+        Puranic.wheel(ui, Template.COL + off, y, 9, Puranic.BRONZE, 1f);
+        Puranic.c(ui, Puranic.COPPER, 0.8f);
+        ui.shapes.rect(Template.COL - off - 74, y - 0.7f, 54, 1.4f);
+        ui.shapes.rect(Template.COL + off + 20, y - 0.7f, 54, 1.4f);
     }
 
     public static void diamond(Ui ui, float x, float y, float r) {

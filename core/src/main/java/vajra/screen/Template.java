@@ -50,11 +50,11 @@ public final class Template {
     }
 
     /** TRACKING between heading glyphs. */
-    public static final float TITLE_TRACK = 5f;
+    public static final float TITLE_TRACK = 4f;
 
     /** The screen heading in gold, wide-tracked — batch pass. */
     public static void title(Ui ui, SpriteBatch batch, String text, float y, float alpha) {
-        ui.title.setColor(Puranic.GOLD[0], Puranic.GOLD[1], Puranic.GOLD[2], alpha);
+        ui.title.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], alpha);
         ui.centeredSpaced(batch, ui.title, text, y, TITLE_TRACK);
         ui.title.setColor(1, 1, 1, 1);
     }
@@ -66,14 +66,14 @@ public final class Template {
 
     /** A sub-heading under a title — batch pass. */
     public static void sub(Ui ui, SpriteBatch batch, String text, float y, float alpha) {
-        ui.menu.setColor(Puranic.IVORY[0], Puranic.IVORY[1], Puranic.IVORY[2], alpha * A_LINE);
+        ui.menu.setColor(Puranic.BONE[0], Puranic.BONE[1], Puranic.BONE[2], alpha * A_LINE);
         ui.centered(batch, ui.menu, text, y);
         ui.menu.setColor(1, 1, 1, 1);
     }
 
     /** One body line at any alpha — batch pass. */
     public static void line(Ui ui, SpriteBatch batch, String text, float y, float alpha) {
-        ui.body.setColor(Puranic.IVORY[0], Puranic.IVORY[1], Puranic.IVORY[2], alpha);
+        ui.body.setColor(Puranic.BONE[0], Puranic.BONE[1], Puranic.BONE[2], alpha);
         ui.centered(batch, ui.body, text, y);
         ui.body.setColor(1, 1, 1, 1);
     }
@@ -87,14 +87,14 @@ public final class Template {
             total += ui.measure(ui.small, kv[i]) + in + ui.measure(ui.small, kv[i + 1]);
         float x = COL - total / 2f;
         for (int i = 0; i < kv.length; i += 2) {
-            ui.small.setColor(Puranic.IVORY[0], Puranic.IVORY[1], Puranic.IVORY[2], 0.95f);
+            ui.small.setColor(Puranic.BONE[0], Puranic.BONE[1], Puranic.BONE[2], 0.95f);
             ui.small.draw(batch, kv[i], x, y);
             x += ui.measure(ui.small, kv[i]) + in;
-            ui.small.setColor(Puranic.BRASS[0], Puranic.BRASS[1], Puranic.BRASS[2], 1f);
+            ui.small.setColor(Puranic.COPPER[0], Puranic.COPPER[1], Puranic.COPPER[2], 1f);
             ui.small.draw(batch, kv[i + 1], x, y);
             x += ui.measure(ui.small, kv[i + 1]) + out;
             if (i + 2 < kv.length) {
-                ui.small.setColor(Puranic.GOLD[0], Puranic.GOLD[1], Puranic.GOLD[2], 0.7f);
+                ui.small.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], 0.7f);
                 ui.small.draw(batch, "•", x, y);
                 x += dot + out;
             }
@@ -102,12 +102,15 @@ public final class Template {
         ui.small.setColor(1, 1, 1, 1);
     }
 
-    /** One menu row: bright gold when selected, ivory when idle, centred. Batch pass. The plaque
-     *  behind the selected row comes from {@link Ornament#markers}, in the shape pass. */
+    /** The tracking of menu rows: spaced capitals, the way an instrument labels a control. */
+    public static final float ROW_TRACK = 2f;
+
+    /** One menu row: soot ink on the leaf when selected, bone on the dark when idle, centred and
+     *  spaced. Batch pass. The leaf behind the selected row comes from {@link Ornament#markers}. */
     public static void menuRow(Ui ui, SpriteBatch batch, String label, boolean on, float y) {
-        if (on) ui.menu.setColor(1f, 0.88f, 0.42f, 1f);
-        else ui.menu.setColor(Puranic.IVORY[0], Puranic.IVORY[1], Puranic.IVORY[2], 0.78f);
-        ui.centered(batch, ui.menu, label, y);
+        if (on) ui.menu.setColor(Puranic.INK[0], Puranic.INK[1], Puranic.INK[2], 1f);
+        else ui.menu.setColor(Puranic.BONE[0], Puranic.BONE[1], Puranic.BONE[2], 0.80f);
+        ui.centeredSpaced(batch, ui.menu, label, y, ROW_TRACK);
         ui.menu.setColor(1, 1, 1, 1);
     }
 

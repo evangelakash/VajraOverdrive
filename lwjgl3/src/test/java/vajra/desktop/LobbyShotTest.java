@@ -40,8 +40,8 @@ import vajra.screen.Ui;
 class LobbyShotTest {
     private static final int W = 1280, H = 720;
     private static final float[] CLEAR = {13, 13, 26};
-    private static final int ROSTER_Y = 440, PITCH = 24; // LobbyScreen's table geometry
-    private static final int SWATCH_X = 640 - 226, READY_X = 640 + 60; // swatch + status columns
+    private static final int ROSTER_Y = 412, PITCH = 28; // LobbyScreen's table geometry
+    private static final int SWATCH_X = 640 - 238, READY_X = 640 + 10; // swatch + status columns
 
     /** One socket in a shared wire: sends land in the addressed port's queue, from-addressed. */
     static final class Fan implements Transport {

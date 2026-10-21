@@ -23,10 +23,10 @@ public final class UiTheme {
     public static final String FONT_NUMERAL = "Rajdhani-SemiBold.ttf";
 
     // the Puranic menu faces: smooth outline fonts, never the pixel face (that stays on the HUD)
-    public static final String FONT_DISPLAY = "RozhaOne-Regular.ttf";           // titles, the lockup
-    public static final String FONT_HEAD = "RozhaOne-Regular.ttf";            // headings, numerals, prices
-    public static final String FONT_TEXT = "YatraOne-Regular.ttf";            // menus and reading text
-    public static final int MENU_SIZE = 20, TEXT_SIZE = 15, SMALL_SIZE = 12, HEAD_SIZE = 26, NUM_SIZE = 17,
+    public static final String FONT_DISPLAY = "YatraOne-Regular.ttf";           // titles, the lockup: a hand-drawn Indic face
+    public static final String FONT_HEAD = "YatraOne-Regular.ttf";            // card headings
+    public static final String FONT_TEXT = "Rajdhani-SemiBold.ttf";            // menus, text, numerals: a squared, technical face
+    public static final int MENU_SIZE = 24, TEXT_SIZE = 17, SMALL_SIZE = 13, HEAD_SIZE = 26, NUM_SIZE = 18,
             DISPLAY_SIZE = 36;
 
     public static final int TITLE_SIZE = 30;

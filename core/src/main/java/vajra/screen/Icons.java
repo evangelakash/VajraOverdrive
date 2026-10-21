@@ -71,18 +71,18 @@ public final class Icons {
     private static Pixmap coinArt() {
         Pixmap p = new Pixmap(ART, ART, Pixmap.Format.RGBA8888);
         int c = ART / 2;
-        p.setColor(Puranic.BRASS[0] * 0.7f, Puranic.BRASS[1] * 0.7f, Puranic.BRASS[2] * 0.7f, 1f);
+        p.setColor(Puranic.COPPER[0] * 0.7f, Puranic.COPPER[1] * 0.7f, Puranic.COPPER[2] * 0.7f, 1f);
         p.fillCircle(c, c, 46);                                  // the shadowed edge
-        p.setColor(Puranic.GOLD[0], Puranic.GOLD[1], Puranic.GOLD[2], 1f);
+        p.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], 1f);
         p.fillCircle(c, c, 43);
-        ring(p, c, c, 40, 4, Puranic.BRASS);                     // the rim
-        p.setColor(Puranic.GOLD[0], Puranic.GOLD[1], Puranic.GOLD[2], 1f);
+        ring(p, c, c, 40, 4, Puranic.COPPER);                     // the rim
+        p.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], 1f);
         p.fillCircle(c, c, 35);
-        p.setColor(Puranic.BRASS[0], Puranic.BRASS[1], Puranic.BRASS[2], 1f);
+        p.setColor(Puranic.COPPER[0], Puranic.COPPER[1], Puranic.COPPER[2], 1f);
         p.fillRectangle(c - 14, c - 14, 28, 28);                 // the punch-mark
-        p.setColor(Puranic.GOLD[0], Puranic.GOLD[1], Puranic.GOLD[2], 1f);
+        p.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], 1f);
         p.fillRectangle(c - 9, c - 9, 18, 18);
-        p.setColor(Puranic.SAFFRON[0], Puranic.SAFFRON[1], Puranic.SAFFRON[2], 1f);
+        p.setColor(Puranic.OCHRE[0], Puranic.OCHRE[1], Puranic.OCHRE[2], 1f);
         p.fillCircle(c, c, 5);
         p.setColor(1f, 0.97f, 0.8f, 0.55f);
         p.fillCircle(c - 20, c + 20, 6);                         // a glint
@@ -96,7 +96,7 @@ public final class Icons {
         Color dark = new Color(col.r * 0.55f, col.g * 0.55f, col.b * 0.55f, 1f);
         Color light = new Color(Math.min(1f, col.r * 0.4f + 0.6f), Math.min(1f, col.g * 0.4f + 0.6f),
                 Math.min(1f, col.b * 0.4f + 0.6f), 1f);
-        p.setColor(Puranic.GOLD[0], Puranic.GOLD[1], Puranic.GOLD[2], 1f); // the setting
+        p.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], 1f); // the setting
         p.fillTriangle(c, c + 46, c + 36, c, c - 36, c);
         p.fillTriangle(c, c - 46, c + 36, c, c - 36, c);
         p.setColor(dark);

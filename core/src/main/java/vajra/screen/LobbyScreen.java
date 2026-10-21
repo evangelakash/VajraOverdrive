@@ -133,7 +133,7 @@ public class LobbyScreen implements FlowState {
             // the table's rule and every row's seat swatch + the talking diamond
             float plateTop = ROSTER_Y + 44, plateBot = ROSTER_Y - 3 * ROSTER_PITCH - 22;
             Puranic.plate(ui, cx - 266, plateBot, 532, plateTop - plateBot, 0.92f, 0.85f);
-            Puranic.c(ui, Puranic.BRASS, 0.6f);
+            Puranic.c(ui, Puranic.COPPER, 0.6f);
             ui.shapes.rect(cx - 244, ROSTER_Y + 8, 488, 1.5f);
             for (int i = 0; i < session.count(); i++) {
                 Msg.Member member = session.member(i);
@@ -159,13 +159,13 @@ public class LobbyScreen implements FlowState {
         ui.menu.setColor(Color.WHITE);
         String door = doorLine();
         if (!door.isEmpty()) {
-            ui.small.setColor(Puranic.BRASS[0], Puranic.BRASS[1], Puranic.BRASS[2], 1f);
+            ui.small.setColor(Puranic.COPPER[0], Puranic.COPPER[1], Puranic.COPPER[2], 1f);
             ui.centered(batch, ui.small, door, MSG_Y - 28);
             ui.small.setColor(Color.WHITE);
         }
         if (session != null) {
             float head = ROSTER_Y + 30; // the column labels over the rule
-            ui.small.setColor(Puranic.BRASS[0], Puranic.BRASS[1], Puranic.BRASS[2], 1f);
+            ui.small.setColor(Puranic.COPPER[0], Puranic.COPPER[1], Puranic.COPPER[2], 1f);
             ui.small.draw(batch, "PILOT", cx + COL_NAME, head);
             ui.small.draw(batch, "STATUS", cx + COL_READY, head);
             ui.small.draw(batch, "PING", cx + COL_PING, head);
@@ -183,7 +183,7 @@ public class LobbyScreen implements FlowState {
                 ui.body.setColor(ping > 0 && ping > 90 ? SeatColors.WAIT
                         : ping > 0 ? SeatColors.GO : Color.GRAY);
                 ui.body.draw(batch, ping > 0 ? Integer.toString(ping) : "-", cx + COL_PING, y);
-                ui.body.setColor(Puranic.IVORY[0], Puranic.IVORY[1], Puranic.IVORY[2], 0.8f);
+                ui.body.setColor(Puranic.BONE[0], Puranic.BONE[1], Puranic.BONE[2], 0.8f);
                 ui.right(batch, ui.body, member.points > 0
                         ? String.format(java.util.Locale.US, "%,d", member.points) : "-",
                         cx + COL_PTS + 14, y);

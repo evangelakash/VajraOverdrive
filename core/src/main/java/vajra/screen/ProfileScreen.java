@@ -36,8 +36,8 @@ public class ProfileScreen implements FlowState {
     private static final String[] LABELS = {"BEST", "RUNS", "KILLS", "POINTS", "TIME"};
 
     // palette
-    private static final float[] CYAN = {0.96f, 0.78f, 0.30f};   // gold leaf
-    private static final float[] CYAN_DIM = {0.42f, 0.30f, 0.13f}; // brass, dim
+    private static final float[] CYAN = Puranic.BRONZE;           // the heading bronze
+    private static final float[] CYAN_DIM = Puranic.BARK;          // bark, dim
     private static final float[] PANEL = Puranic.PLATE;
 
     private final Flow flow;
@@ -285,7 +285,7 @@ public class ProfileScreen implements FlowState {
             text(ui.body, LABELS[i], ledgerX + 18, y, CYAN, 0.95f);
             String v = value(i);
             layout.setText(ui.num, v);
-            text(ui.num, v, ledgerX + LEDGER_W - 18 - layout.width, y, Puranic.IVORY, 1f);
+            text(ui.num, v, ledgerX + LEDGER_W - 18 - layout.width, y, Puranic.BONE, 1f);
         }
 
         // action rows (dimmed while the name is being typed)

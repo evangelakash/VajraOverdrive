@@ -153,7 +153,7 @@ public final class Ui {
         FreeTypeFontGenerator.FreeTypeFontParameter p = new FreeTypeFontGenerator.FreeTypeFontParameter();
         p.size = size * SUPERSAMPLE;
         p.characters = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
-                + "abcdefghijklmnopqrstuvwxyz{|}~\u2014\u2013\u00B0\u00D7\u00B7\u2022\u2019\u2018\u201C\u201D";
+                + "abcdefghijklmnopqrstuvwxyz{|}~\u2014\u2013\u00B0\u00D7\u00B7\u2022\u0950\u0965\u2019\u2018\u201C\u201D";
         p.minFilter = com.badlogic.gdx.graphics.Texture.TextureFilter.MipMapLinearLinear;
         p.magFilter = com.badlogic.gdx.graphics.Texture.TextureFilter.Linear;
         p.genMipMaps = true;

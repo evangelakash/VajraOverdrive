@@ -14,9 +14,9 @@ import vajra.flow.FlowState;
  *  binding so the player never has to alt-tab out to remember them. ESC or a click returns
  *  to the screen that pushed it. */
 public class ControlScreen implements FlowState {
-    private static final float SUB_Y = Template.TITLE_Y - 34; // the subtitle, right under the heading
+    private static final float SUB_Y = Template.TITLE_Y - 40; // the subtitle, right under the heading
     private static final int PER_COL = 9;
-    private static final float TOP = 492, ROW_H = 46;          // the first row's centre and the pitch
+    private static final float TOP = 466, ROW_H = 44;          // the first row's centre and the pitch
     private static final float[] COL_X = { 52, 664 };          // the two columns
     private static final float CHIP_W = 160, CHIP_H = 26, DESC_DX = 176, DESC_W = 388;
 
@@ -80,12 +80,9 @@ public class ControlScreen implements FlowState {
         Ornament.titleMarkers(ui, "CONTROLS", Template.TITLE_Y);
         for (int i = 0; i < ROWS.length; i++) { // each key sits on its own palm-leaf chip
             float x = COL_X[i / PER_COL], y = TOP - (i % PER_COL) * ROW_H;
-            float w = Math.max(CHIP_W, ui.measure(ui.body, ROWS[i][0]) + 26);
-            Puranic.c(ui, Puranic.PLATE, 0.95f);
-            Puranic.pill(ui, x, y - CHIP_H / 2f, w, CHIP_H, 9);
-            Puranic.c(ui, Puranic.GOLD, 0.85f);
-            Puranic.arcFrame(ui, x, y - CHIP_H / 2f, w, CHIP_H, 9, 1.2f);
-            Puranic.c(ui, Puranic.BRASS, 0.25f);
+            float w = Math.max(CHIP_W, ui.measure(ui.body, ROWS[i][0]) + 40);
+            Puranic.leaf(ui, x, y - CHIP_H / 2f, w, CHIP_H, Puranic.BARK, 0.95f, false);
+            Puranic.c(ui, Puranic.COPPER, 0.25f);
             ui.shapes.rect(x + DESC_DX - 8, y - ROW_H / 2f + 5, 1, ROW_H - 10);
         }
         ui.shapes.end();
@@ -96,10 +93,10 @@ public class ControlScreen implements FlowState {
         Template.sub(ui, batch, "Every binding the run uses", SUB_Y, 1f);
         for (int i = 0; i < ROWS.length; i++) {
             float x = COL_X[i / PER_COL], y = TOP - (i % PER_COL) * ROW_H;
-            float w = Math.max(CHIP_W, ui.measure(ui.body, ROWS[i][0]) + 26);
-            ui.body.setColor(1f, 0.93f, 0.62f, 1f);
+            float w = Math.max(CHIP_W, ui.measure(ui.body, ROWS[i][0]) + 40);
+            ui.body.setColor(Puranic.BONE[0], Puranic.BONE[1], Puranic.BONE[2], 1f);
             ui.body.draw(batch, ROWS[i][0], x + (w - ui.measure(ui.body, ROWS[i][0])) / 2f, y + 7);
-            ui.small.setColor(Puranic.IVORY[0], Puranic.IVORY[1], Puranic.IVORY[2], 0.85f);
+            ui.small.setColor(Puranic.BONE[0], Puranic.BONE[1], Puranic.BONE[2], 0.85f);
             layout.setText(ui.small, ROWS[i][1], ui.small.getColor(), DESC_W, com.badlogic.gdx.utils.Align.left, true);
             ui.small.draw(batch, layout, x + DESC_DX, y + layout.height / 2f);
         }

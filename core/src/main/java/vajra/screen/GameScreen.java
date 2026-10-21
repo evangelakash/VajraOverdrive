@@ -102,7 +102,8 @@ public class GameScreen implements FlowState, ShipControls {
     }
 
     private boolean onKey(int keycode) {
-        if ((keycode == Input.Keys.ENTER || keycode == Input.Keys.ESCAPE) && shop.isOpen()) {
+        if ((keycode == Input.Keys.ENTER || keycode == Input.Keys.ESCAPE) && shop.isOpen()
+                && !shop.confirming()) { // a waiting purchase takes ENTER (buy) and ESC (cancel) first
             shop.close(); // parks that bay until the ship flies out — no reopening
             return true;
         }

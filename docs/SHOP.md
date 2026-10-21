@@ -34,3 +34,18 @@ green is a gain and rose a loss, used only on numbers and charts.
 The HUD face (`courbe-sans`) has no `+`, `-`, `%`, middle dot or em dash. Changes are written as
 ratios ("x1.35") and words ("hull up 25"); `ShopStatsTest.shopTextOnlyUsesGlyphsTheHudFaceDraws`
 keeps new strings honest.
+
+## Confirming a purchase
+
+Every purchase asks first: `B` on a hull or upgrade, `N` or a click on a weapon, a click on a price
+cell. A small plate comes up over the page with what it is, what it does, the price, and what is left
+afterwards (`docs/shop-redesign/confirm-*.png`).
+
+| Key / click | Does |
+|---|---|
+| ENTER or Y, or the BUY button | buys it |
+| ESC, N or BACKSPACE, the CANCEL button, or a click outside the plate | cancels; the hangar stays open |
+
+While the plate is up it owns every key, so TAB, X (sell) or a second B do nothing behind it. A
+purchase that could not go through (too dear, locked, already owned) asks nothing and does nothing,
+as before. Owned weapons still fit at once, since nothing is spent. `ShopConfirmTest` covers it.

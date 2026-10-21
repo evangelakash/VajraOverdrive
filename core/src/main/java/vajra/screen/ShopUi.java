@@ -4,6 +4,8 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import vajra.ship.Hangar;
 import vajra.ship.ShipDef;
 import vajra.weapon.WeaponDef;
@@ -79,6 +81,8 @@ public final class ShopUi {
     public static final String[] TAB_NAMES = { "WAR TABLE", "HULLS", "REFORGING", "WEAPONS", "ASTRA FORGE", "SHARDS" };
 
     // clickable regions
+    /** What a point is over while the confirmation is up. */
+    public static final int CONFIRM_OUTSIDE = -1, CONFIRM_INSIDE = 0, CONFIRM_BUY = 1, CONFIRM_CANCEL = 2;
     public static final int NONE = -1, TAB = 0, HULL = 1, TIER = 2, WEAPON = 3, ASTRA = 4,
             SELL = 5, CLOSE = 6;
     /** One hit region: shards exist to forge the Astra, and only the loka's own element pays it. */
@@ -156,6 +160,51 @@ public final class ShopUi {
         int coins, shards, dest, jShip = NONE, jTier = NONE, jWeapon = NONE;
         boolean ready;
     }
+    /** A purchase waiting on a yes: what it is, what it costs, and what is left after. */
+    public static final class Confirm {
+        public static final int HULL = 0, TIER = 1, WEAPON = 2;
+        public final int kind;
+        public final String title, name, effect;
+        public final int ship, tier, weapon, coins, shards, coinsLeft, shardsLeft;
+
+        private Confirm(int kind, String title, String name, String effect, int ship, int tier,
+                        int weapon, int coins, int shards, int coinsLeft, int shardsLeft) {
+            this.kind = kind;
+            this.title = title;
+            this.name = name;
+            this.effect = effect;
+            this.ship = ship;
+            this.tier = tier;
+            this.weapon = weapon;
+            this.coins = coins;
+            this.shards = shards;
+            this.coinsLeft = coinsLeft;
+            this.shardsLeft = shardsLeft;
+        }
+
+        static Confirm hull(ShipDef d, int cost, int coinsLeft) {
+            return new Confirm(HULL, "BUY THIS HULL?", d.name, ShopStats.role(d), d.id, 0, -1,
+                    cost, 0, coinsLeft, -1);
+        }
+
+        static Confirm tier(ShipDef d, int tier, int cost, int shards, int coinsLeft, int shardsLeft) {
+            ShipDef.Upgrade u = d.upgrades[tier];
+            return new Confirm(TIER, "BUY THIS UPGRADE?", u.label + "  " + u.name + "  on " + d.name,
+                    tierEffect(d, tier), d.id, tier, -1, cost, shards, coinsLeft, shardsLeft);
+        }
+
+        static Confirm weapon(Hangar h, WeaponDef w, int coinsLeft) {
+            ShopStats.Shot s = ShopStats.shot(h, w);
+            return new Confirm(WEAPON, "BUY THIS WEAPON?", w.name,
+                    "DPS " + Math.round(s.dps) + "   REACH " + Math.round(s.reach) + " px",
+                    -1, 0, w.idx, w.cost, 0, coinsLeft, -1);
+        }
+    }
+
+    private Confirm confirm;
+    private int confirmHover = CONFIRM_OUTSIDE;
+    private Texture pixel; // one white texel: the modal's rects ride the batch, over every page's text
+
     private final Next[] next = { new Next(), new Next(), new Next(), new Next() };
     private int nextCount;
 
@@ -287,6 +336,86 @@ public final class ShopUi {
     private static float vaultRuleY(int n) { return vaultRowY(n - 1) - VAULT_PITCH / 2f; }
     private static float vaultTotalY(int n) { return vaultRuleY(n) - 24; }
     private static float vaultBtnY(int n) { return vaultTotalY(n) - 64; }
+
+    // =============================================================== the confirmation
+    private static final float CONF_W = 460, CONF_H = 226, CONF_BTN_W = 176, CONF_BTN_H = 34;
+    private static final float CONF_X0 = CX - CONF_W / 2f, CONF_Y0 = UiTheme.SCREEN_H / 2f - CONF_H / 2f;
+    private static final float CONF_BTN_Y = CONF_Y0 + 36;
+
+    public void setConfirm(Confirm c) {
+        confirm = c;
+        confirmHover = CONFIRM_OUTSIDE;
+    }
+
+    public Confirm confirm() { return confirm; }
+
+    /** What is under the pointer while the confirmation is up. */
+    public int confirmHit(Vector2 m) {
+        if (Math.abs(m.y - CONF_BTN_Y) <= CONF_BTN_H / 2f) {
+            if (Math.abs(m.x - (CX - 100)) <= CONF_BTN_W / 2f) return CONFIRM_BUY;
+            if (Math.abs(m.x - (CX + 100)) <= CONF_BTN_W / 2f) return CONFIRM_CANCEL;
+        }
+        boolean in = m.x >= CONF_X0 && m.x <= CONF_X0 + CONF_W && m.y >= CONF_Y0 && m.y <= CONF_Y0 + CONF_H;
+        return in ? CONFIRM_INSIDE : CONFIRM_OUTSIDE;
+    }
+
+    public void confirmHover(Vector2 m) {
+        confirmHover = confirmHit(m);
+    }
+
+    /** A filled rect in the batch pass, in a tone. */
+    private void box(SpriteBatch b, float x, float y, float w, float h, float[] c, float a) {
+        b.setColor(c[0], c[1], c[2], a);
+        b.draw(pixel, x, y, w, h);
+        b.setColor(1, 1, 1, 1);
+    }
+
+    private void outline(SpriteBatch b, float x, float y, float w, float h, float[] c, float a) {
+        box(b, x, y, w, 1, c, a);
+        box(b, x, y + h - 1, w, 1, c, a);
+        box(b, x, y, 1, h, c, a);
+        box(b, x + w - 1, y, 1, h, c, a);
+    }
+
+    /** The modal: one scrim, one plate, a question, a price and two buttons. Drawn last, in the
+     *  batch pass, so it lies over every page's text. */
+    private void drawConfirm(SpriteBatch b, Hangar h, int el) {
+        if (confirm == null) return;
+        if (pixel == null) {
+            Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+            pm.setColor(1, 1, 1, 1);
+            pm.fill();
+            pixel = new Texture(pm);
+            pm.dispose();
+        }
+        Confirm c = confirm;
+        box(b, 0, 0, Ui.UI_W, Ui.UI_H, DEEP, 0.78f);                       // the page steps back
+        box(b, CONF_X0, CONF_Y0, CONF_W, CONF_H, PANEL, 1f);               // the plate
+        outline(b, CONF_X0, CONF_Y0, CONF_W, CONF_H, BRASS, 0.7f);
+        box(b, CONF_X0, CONF_Y0 + CONF_H - 3, CONF_W, 3, SAF, 1f);         // a saffron lintel
+
+        float top = CONF_Y0 + CONF_H;
+        tinted(b, c.title, CX, top - 28, 0, BRASS, 1f);
+        centerGold(b, c.name, CX, top - 58, 1f);
+        tinted(b, c.effect, CX, top - 82, 0, CREAM, UiTheme.A_LINE);
+        box(b, CONF_X0 + 24, top - 98, CONF_W - 48, 1, BRASS, 0.3f);
+        priceCenter(b, CX, top - 120, c.coins, c.shards, el, "", true, 1f);
+        String left = "LEAVES YOU " + c.coinsLeft + (c.coinsLeft == 1 ? " COIN" : " COINS")
+                + (c.shards > 0 ? " AND " + c.shardsLeft + (c.shardsLeft == 1 ? " SHARD" : " SHARDS") : "");
+        tinted(b, left, CX, top - 144, 0, BRASS, 1f);
+
+        buttonBox(b, CX - 100, "ENTER   BUY", true, confirmHover == CONFIRM_BUY);
+        buttonBox(b, CX + 100, "ESC   CANCEL", false, confirmHover == CONFIRM_CANCEL);
+    }
+
+    private void buttonBox(SpriteBatch b, float cx, String label, boolean primary, boolean hot) {
+        float x = cx - CONF_BTN_W / 2f, y = CONF_BTN_Y - CONF_BTN_H / 2f;
+        float[] tone = primary ? SAF : BRASS;
+        if (primary || hot) box(b, x, y, CONF_BTN_W, CONF_BTN_H, tone, hot ? 0.34f : 0.2f);
+        outline(b, x, y, CONF_BTN_W, CONF_BTN_H, tone, hot || primary ? 1f : 0.7f);
+        if (primary) put(b, label, cx, CONF_BTN_Y, 0, 1f, true);
+        else put(b, label, cx, CONF_BTN_Y, 0, hot ? 1f : UiTheme.A_LINE, false);
+    }
 
     // =============================================================== hit testing
     /** Highlights only — the cursor does not move. Returns whether an ACTION is under the pointer. */
@@ -1202,6 +1331,7 @@ public final class ShopUi {
             default: vaultText(batch, h); break;
         }
         footerKeys(batch);
+        drawConfirm(batch, h, el);
         leave();
     }
 
@@ -1260,6 +1390,10 @@ public final class ShopUi {
 
     /** The per-section keys line, two-tone like every page. */
     private void footerKeys(SpriteBatch batch) {
+        if (confirm != null) { // the page is behind the modal: its keys are not on offer
+            Template.keys(ui, batch, FOOTER_Y, "ENTER", "BUY", "ESC", "CANCEL");
+            return;
+        }
         switch (tab) {
             case TAB_BAY:
                 Template.keys(ui, batch, FOOTER_Y, "CLICK", "OPEN", "TAB", "NEXT SECTION",

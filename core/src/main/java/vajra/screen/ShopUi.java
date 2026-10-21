@@ -12,7 +12,7 @@ import vajra.world.World;
 
 import java.util.ArrayList;
 
-/** THE HANGAR — one opaque screen: a rail of sections on the left, one page on the right.
+/** THE ARMOURY OF ATALA — the hangar, dressed as the forge Maya built under Bala's rule. One opaque screen: a rail of sections on the left, one page on the right.
  *
  *  <p>RAIL (grouped, TAB / click to switch):
  *  <pre>
@@ -24,8 +24,11 @@ import java.util.ArrayList;
  *            VAULT            shards by element, and SELL ALL
  *  </pre>
  *
- *  <p>LOOK — gold hairlines on ink. Gold means "selected" or "pressing the key would do
- *  something"; white is bright or dim. The only ornament is four corner ticks on a card. Coin and
+ *  <p>LOOK — a Puranic palette: deep indigo for the dark, dark brass for hairlines and quiet
+ *  type, saffron for "selected" or "pressing the key would do something", lotus cream for the
+ *  words. Peacock green marks a gain and rose a loss, and only on a number or a chart. The
+ *  charts ({@link ShopStats}) are radars for hulls and bars for patterns, so every purchase
+ *  shows what it changes before it is bought. The only ornament is four corner ticks on a card. Coin and
  *  shard amounts are always their art plus a number. Every page ends in ONE answer line above the
  *  keys line.
  *
@@ -73,7 +76,7 @@ public final class ShopUi {
             TAB_FORGE = 4, TAB_VAULT = 5;
     /** The old three names still point at their nearest section. */
     public static final int TAB_HULL = TAB_FLEET, TAB_PATTERN = TAB_PATTERNS, TAB_ASTRA = TAB_FORGE;
-    public static final String[] TAB_NAMES = { "BAY", "FLEET", "REFIT", "PATTERNS", "FORGE", "VAULT" };
+    public static final String[] TAB_NAMES = { "WAR TABLE", "HULLS", "REFORGING", "WEAPONS", "ASTRA FORGE", "SHARDS" };
 
     // clickable regions
     public static final int NONE = -1, TAB = 0, HULL = 1, TIER = 2, WEAPON = 3, ASTRA = 4,
@@ -89,12 +92,15 @@ public final class ShopUi {
     // --- BAY ---
     private static final float BAY_CW = 300, BAY_CH = 276;
     private static final float BAY_GAP = (BODY_W - 3 * BAY_CW) / 2f;
-    private static final float NEXT_PITCH = 28;
+    private static final float NEXT_PITCH = 24;
 
     // --- FLEET ---
     private static final int FLEET_COLS = 4;
-    private static final float FLEET_CW = 226, FLEET_CH = 156, FLEET_RGAP = 18;
+    private static final float FLEET_CW = 226, FLEET_CH = 122, FLEET_RGAP = 14;
     private static final float FLEET_GAP = (BODY_W - FLEET_COLS * FLEET_CW) / (FLEET_COLS - 1);
+
+    /** The radar's size on the HULLS page and the REFORGING page. */
+    private static final float RADAR_R = 58, REFIT_RADAR_R = 46;
 
     // --- REFIT ---
     private static final float REFIT_NAME_W = 214, REFIT_PITCH = 40;
@@ -105,6 +111,7 @@ public final class ShopUi {
     private static final float PAT_CARD_X = BODY_X + PAT_TABLE_W + 36;
     private static final float PAT_CARD_W = M1 - PAT_CARD_X;
     private static final float PAT_CARD_Y0 = 176;
+    private static final float PAT_CHART_PITCH = 31;
 
     // --- FORGE ---
     private static final float FORGE_CH = 232, FORGE_GAP = 14, FORGE_MAXW = 190;
@@ -113,6 +120,17 @@ public final class ShopUi {
     private static final float VAULT_PITCH = 40, VAULT_BTN_W = 420, VAULT_BTN_H = 44;
 
     private static final String[] STAT_NAMES = { "HP", "SPEED", "TURN" };
+
+    // =============================================================== palette (Puranic)
+    private static final float[] SAF = { 1.00f, 0.62f, 0.14f };      // saffron: selected, actionable
+    private static final float[] BRASS = { 0.80f, 0.62f, 0.30f };    // dark brass: hairlines, quiet type
+    private static final float[] CREAM = { 0.97f, 0.92f, 0.80f };    // lotus cream: the words
+    private static final float[] PEACOCK = { 0.36f, 0.86f, 0.74f };  // a gain
+    private static final float[] ROSE = { 0.96f, 0.45f, 0.50f };     // a loss
+    private static final float[] LAVENDER = { 0.64f, 0.62f, 1.00f }; // the hull you are flying
+    private static final float[] DEEP = { 0.030f, 0.025f, 0.075f };  // indigo, the dark end
+    private static final float[] INDIGO = { 0.070f, 0.055f, 0.150f }; // indigo, the lit end (HudScreenshotTest wants the corner within 16 of ink)
+    private static final float[] PANEL = { 0.105f, 0.085f, 0.250f }; // a card's fill
 
     private final Ui ui;
     private final GlyphLayout gl = new GlyphLayout();
@@ -220,6 +238,8 @@ public final class ShopUi {
 
     private static float bayX(int c) { return BAY_CW * c + BAY_GAP * c + BODY_X; }
     private static float nextHeadY() { return BODY_TOP - BAY_CH - 30; }
+    /** The quest strip's heading line, under the NEXT UP rows. */
+    private static float questY() { return 130; }
     private static float nextRowY(int r) { return nextHeadY() - 16 - 20 - r * NEXT_PITCH; }
 
     private static float fleetX(int i) { return BODY_X + (i % FLEET_COLS) * (FLEET_CW + FLEET_GAP); }
@@ -229,11 +249,22 @@ public final class ShopUi {
         return BODY_TOP - (rows - 1) * (FLEET_CH + FLEET_RGAP) - FLEET_CH;
     }
     private static float fleetHeadY(int n) { return fleetBottom(n) - 36; }
-    private static float fleetStatY(int n, int k) { return fleetHeadY(n) - 28 - k * 26; }
+    private static float fleetStatY(int n, int k) { return fleetHeadY(n) - 28 - k * 25; }
+    private static float fleetRadarX() { return BODY_X + 150; }
+    private static float fleetRadarY(int n) { return (fleetBottom(n) - 24 + BODY_Y + 14) / 2f + 14; }
+    private static float fleetTableX() { return BODY_X + 330; }
+    private static float fleetUpgX() { return BODY_X + 700; }
 
     private static float refitColX(int t) { return BODY_X + REFIT_NAME_W + t * REFIT_COL_W; }
     private static float refitRowY(int i) { return BODY_TOP - 54 - i * REFIT_PITCH; }
     private static float refitBottom(int n) { return refitRowY(n - 1) - REFIT_PITCH / 2f; }
+    private static float refitRadarX() { return BODY_X + 150; }
+    private static float refitRadarY(int n) { return (refitBottom(n) - 34 + BODY_Y) / 2f - 2; }
+    private static float refitTableX() { return BODY_X + 300; }
+    private static float refitTableY(int n, int k) { return refitBottom(n) - 54 - k * 20; }
+
+    /** Centre line of metric row i in the pattern card; its bar sits 13 below. */
+    private static float patChartY(int i) { return BODY_TOP - 232 - i * PAT_CHART_PITCH; }
 
     private static float patPitch(int n) { return Math.min(28f, (BODY_TOP - 34 - BODY_Y) / n); }
     private static float patRowY(int i, int n) {
@@ -411,10 +442,11 @@ public final class ShopUi {
         if (u.damageMult != 1f) add(s, "dmg x" + trim(u.damageMult));
         if (u.cooldownMult != 1f) add(s, "CD x" + trim(u.cooldownMult));
         if (u.dashCdMult != 1f) add(s, "dash x" + trim(u.dashCdMult));
-        if (u.hullBonus != 0) add(s, "hull +" + (int) u.hullBonus);
-        if (u.shieldBonus != 0) add(s, "shield +" + (int) u.shieldBonus);
-        if (u.speedBonus != 0) add(s, "spd +" + (int) u.speedBonus);
-        if (u.turnBonus != 0) add(s, "turn +" + (int) u.turnBonus);
+        // "up N", not "+N": the HUD face has no plus glyph
+        if (u.hullBonus != 0) add(s, "hull up " + (int) u.hullBonus);
+        if (u.shieldBonus != 0) add(s, "shield up " + (int) u.shieldBonus);
+        if (u.speedBonus != 0) add(s, "speed up " + (int) u.speedBonus);
+        if (u.turnBonus != 0) add(s, "turn up " + (int) u.turnBonus);
         return s.length() == 0 ? "the hull itself" : s.toString();
     }
 
@@ -528,7 +560,7 @@ public final class ShopUi {
                 if (s.length() > 0) s.append(", ");
                 s.append(LokaTable.at(l).name.toUpperCase());
             }
-        return s.length() == 0 ? "-" : s.toString();
+        return s.length() == 0 ? "\u2014" : s.toString();
     }
 
     private static int artLevel(Hangar h, int i) { return h.owned[i][2] ? 3 : h.owned[i][1] ? 2 : 1; }
@@ -567,13 +599,33 @@ public final class ShopUi {
     }
 
     // =============================================================== small drawing helpers
-    private void gold(float a) {
-        ui.shapes.setColor(Template.accentR, Template.accentG, Template.accentB, a);
+    private void gold(float a) { ui.shapes.setColor(SAF[0], SAF[1], SAF[2], a); }
+
+    private void brass(float a) { ui.shapes.setColor(BRASS[0], BRASS[1], BRASS[2], a); }
+
+    private void tone(float[] c, float a) { ui.shapes.setColor(c[0], c[1], c[2], a); }
+
+    private void hair(float x, float y, float w, float a) { brass(a); ui.shapes.rect(x, y, w, 1); }
+
+    private void vhair(float x, float y, float h, float a) { brass(a); ui.shapes.rect(x, y, 1, h); }
+
+    /** A card's body: a lit indigo plate the hairlines and ticks sit on. */
+    private void panel(float x0, float y0, float x1, float y1, float a) {
+        tone(PANEL, a);
+        ui.shapes.rect(x0, y0, x1 - x0, y1 - y0);
     }
 
-    private void hair(float x, float y, float w, float a) { gold(a); ui.shapes.rect(x, y, w, 1); }
+    // Ornament and Template draw in the shared accent; the armoury wears saffron for its own passes
+    private float sr, sg, sb;
 
-    private void vhair(float x, float y, float h, float a) { gold(a); ui.shapes.rect(x, y, 1, h); }
+    private void enter() {
+        sr = Template.accentR;
+        sg = Template.accentG;
+        sb = Template.accentB;
+        Template.setAccent(SAF[0], SAF[1], SAF[2]);
+    }
+
+    private void leave() { Template.setAccent(sr, sg, sb); }
 
     private void fill(float x, float y, float w, float h, float a) { gold(a); ui.shapes.rect(x, y, w, h); }
 
@@ -589,7 +641,8 @@ public final class ShopUi {
 
     /** Four corner ticks round a box, like a viewfinder — the screen's one ornament. */
     private void ticks(float x0, float y0, float x1, float y1, float len, float alpha) {
-        gold(alpha);
+        if (alpha > 0.85f) gold(alpha);
+        else brass(alpha);
         float w = 1.5f;
         ui.shapes.rectLine(x0, y0, x0 + len, y0, w);
         ui.shapes.rectLine(x0, y0, x0, y0 + len, w);
@@ -628,18 +681,93 @@ public final class ShopUi {
     }
 
     private void bar(float x, float cy, float w, float frac, float a) {
-        gold(0.2f);
+        brass(0.25f);
         ui.shapes.rect(x, cy - 2, w, 4);
         gold(a);
         ui.shapes.rect(x, cy - 2, w * frac, 4);
+    }
+
+    // =============================================================== radar
+    /** Axis k points up for k = 0 and runs clockwise. */
+    private static float axisAngle(int k) {
+        return (float) (Math.PI / 2 - k * Math.PI * 2 / ShopStats.AXES);
+    }
+
+    private void radarGrid(float cx, float cy, float r) {
+        for (int ring = 1; ring <= 3; ring++) {
+            brass(ring == 3 ? 0.45f : 0.2f);
+            float rr = r * ring / 3f;
+            for (int k = 0; k < ShopStats.AXES; k++) {
+                int n = (k + 1) % ShopStats.AXES;
+                ui.shapes.rectLine(cx + (float) Math.cos(axisAngle(k)) * rr, cy + (float) Math.sin(axisAngle(k)) * rr,
+                        cx + (float) Math.cos(axisAngle(n)) * rr, cy + (float) Math.sin(axisAngle(n)) * rr, 1f);
+            }
+        }
+        brass(0.2f);
+        for (int k = 0; k < ShopStats.AXES; k++)
+            ui.shapes.rectLine(cx, cy, cx + (float) Math.cos(axisAngle(k)) * r,
+                    cy + (float) Math.sin(axisAngle(k)) * r, 1f);
+    }
+
+    private void radarFill(float cx, float cy, float r, float[] f, float[] c, float a) {
+        tone(c, a);
+        for (int k = 0; k < ShopStats.AXES; k++) {
+            int n = (k + 1) % ShopStats.AXES;
+            ui.shapes.triangle(cx, cy,
+                    cx + (float) Math.cos(axisAngle(k)) * r * f[k], cy + (float) Math.sin(axisAngle(k)) * r * f[k],
+                    cx + (float) Math.cos(axisAngle(n)) * r * f[n], cy + (float) Math.sin(axisAngle(n)) * r * f[n]);
+        }
+    }
+
+    private void radarLine(float cx, float cy, float r, float[] f, float[] c, float a, float w) {
+        tone(c, a);
+        for (int k = 0; k < ShopStats.AXES; k++) {
+            int n = (k + 1) % ShopStats.AXES;
+            ui.shapes.rectLine(cx + (float) Math.cos(axisAngle(k)) * r * f[k], cy + (float) Math.sin(axisAngle(k)) * r * f[k],
+                    cx + (float) Math.cos(axisAngle(n)) * r * f[n], cy + (float) Math.sin(axisAngle(n)) * r * f[n], w);
+        }
+    }
+
+    /** The six axis names round the rim. Right-hand names hang off their spoke, left-hand ones end on it. */
+    private void radarLabels(SpriteBatch b, float cx, float cy, float r) {
+        for (int k = 0; k < ShopStats.AXES; k++) {
+            float c = (float) Math.cos(axisAngle(k)), sn = (float) Math.sin(axisAngle(k));
+            float x = cx + c * (r + 9), y = cy + sn * (r + 11);
+            int anchor = Math.abs(c) < 0.2f ? 0 : c > 0 ? -1 : 1;
+            put(b, ShopStats.AXIS_NAMES[k], x, y, anchor, UiTheme.A_LINE, false);
+        }
+    }
+
+    /** A small legend swatch in the shape pass: a short line in a tone. */
+    private void swatch(float x, float y, float[] c, boolean solid) {
+        tone(c, solid ? 0.9f : 0.7f);
+        ui.shapes.rect(x, y - 2, 18, solid ? 4 : 2);
     }
 
     // --- text: every call takes the line's CENTRE y, so rows, icons and shapes share one axis ---
     private void put(SpriteBatch b, String s, float x, float cy, int anchor, float a, boolean gold) {
         float w = textW(s);
         float px = anchor < 0 ? x : anchor == 0 ? x - w / 2f : x - w;
-        if (gold) ui.hud.setColor(Template.accentR, Template.accentG, Template.accentB, a);
-        else ui.hud.setColor(1, 1, 1, a);
+        if (gold) ui.hud.setColor(SAF[0], SAF[1], SAF[2], a);
+        else ui.hud.setColor(CREAM[0], CREAM[1], CREAM[2], a);
+        ui.hud.draw(b, s, px, cy + cap / 2f);
+        ui.hud.setColor(1, 1, 1, 1);
+    }
+
+    /** A paragraph wrapped to a width, top line's centre at `topCy`; returns the height used. */
+    private float wrapped(SpriteBatch b, String s, float x, float topCy, float width, float[] c) {
+        ui.hud.setColor(c[0], c[1], c[2], 1f);
+        gl.setText(ui.hud, s, ui.hud.getColor(), width, com.badlogic.gdx.utils.Align.left, true);
+        ui.hud.draw(b, gl, x, topCy + cap / 2f);
+        ui.hud.setColor(1, 1, 1, 1);
+        return gl.height;
+    }
+
+    /** Text in an exact tone — the gain / loss / brass lines the charts use. */
+    private void tinted(SpriteBatch b, String s, float x, float cy, int anchor, float[] c, float a) {
+        float w = textW(s);
+        float px = anchor < 0 ? x : anchor == 0 ? x - w / 2f : x - w;
+        ui.hud.setColor(c[0], c[1], c[2], a);
         ui.hud.draw(b, s, px, cy + cap / 2f);
         ui.hud.setColor(1, 1, 1, 1);
     }
@@ -769,7 +897,7 @@ public final class ShopUi {
         Next n = next[nextCount++];
         n.kind = "ASTRA";
         n.what = "FORGE";
-        n.costText = validLoka(loka) ? forgeNext(h, loka) : "-";
+        n.costText = validLoka(loka) ? forgeNext(h, loka) : "\u2014";
         n.ready = validLoka(loka) && h.forgeCharges[loka] > 0;
         n.dest = TAB_FORGE;
         n.jShip = NONE;
@@ -785,9 +913,16 @@ public final class ShopUi {
         curLoka = w.lokaIndex;
         cap = capH();
         refreshNext(w);
-        Template.dim(ui, 1f); // OPAQUE: the world behind the hangar is not a backdrop
+        enter();
+        // OPAQUE: the world behind the hangar is not a backdrop. Indigo, lit from above.
+        ui.shapes.rect(0, 0, Ui.UI_W, Ui.UI_H,
+                new com.badlogic.gdx.graphics.Color(DEEP[0], DEEP[1], DEEP[2], 1f),
+                new com.badlogic.gdx.graphics.Color(DEEP[0], DEEP[1], DEEP[2], 1f),
+                new com.badlogic.gdx.graphics.Color(INDIGO[0], INDIGO[1], INDIGO[2], 1f),
+                new com.badlogic.gdx.graphics.Color(INDIGO[0], INDIGO[1], INDIGO[2], 1f));
+        halo();
         Ornament.frame(ui);
-        hair(M0, HEAD_RULE_Y, M1 - M0, 0.22f);
+        hair(M0, HEAD_RULE_Y, M1 - M0, 0.30f);
         hair(BODY_X, ANSWER_RULE_Y, BODY_W, 0.22f);
         railShapes();
         switch (tab) {
@@ -797,6 +932,22 @@ public final class ShopUi {
             case TAB_PATTERNS: patternShapes(h); break;
             case TAB_FORGE: forgeShapes(h, w.lokaIndex); break;
             default: vaultShapes(h); break;
+        }
+        leave();
+    }
+
+    /** The vajra's halo: three faint rings behind the page, there for the eye and nothing else. */
+    private void halo() {
+        float cx = BODY_CX + 120, cy = BODY_Y + BODY_H / 2f;
+        for (int i = 0; i < 3; i++) {
+            float r = 150 + i * 90;
+            brass(0.035f);
+            int segs = 72;
+            for (int k = 0; k < segs; k++) {
+                float a0 = (float) (k * Math.PI * 2 / segs), a1 = (float) ((k + 1) * Math.PI * 2 / segs);
+                ui.shapes.rectLine(cx + (float) Math.cos(a0) * r, cy + (float) Math.sin(a0) * r,
+                        cx + (float) Math.cos(a1) * r, cy + (float) Math.sin(a1) * r, 1.5f);
+            }
         }
     }
 
@@ -817,6 +968,7 @@ public final class ShopUi {
         for (int c = 0; c < 3; c++) {
             float x0 = bayX(c), y1 = BODY_TOP, y0 = y1 - BAY_CH;
             boolean hot = hoverRegion == TAB && hoverSub == c;
+            panel(x0, y0, x0 + BAY_CW, y1, 0.7f);
             ticks(x0, y0, x0 + BAY_CW, y1, 14, hot ? 1f : 0.5f);
             hair(x0 + 16, y1 - 40, BAY_CW - 32, 0.22f);
         }
@@ -828,6 +980,10 @@ public final class ShopUi {
             bar(bayX(2) + 40, BODY_TOP - 248, BAY_CW - 80, forgeFrac(h, w.lokaIndex), 0.9f);
 
         hair(BODY_X, nextHeadY() - 16, BODY_W, 0.35f);
+        // the quest: the Vajra's seven bands, one pip each — solid once taken back
+        hair(BODY_X, questY() + 32, BODY_W, 0.22f);
+        for (int i = 0; i < h.pieces.length; i++)
+            pip(BODY_X + BODY_W - 20 - (h.pieces.length - 1 - i) * 24, questY() - 6, h.pieces[i], 1f);
         for (int r = 0; r < nextCount; r++)
             if (hoverRegion == TAB && hoverSub == 10 + r)
                 fill(BODY_X, nextRowY(r) - NEXT_PITCH / 2f, BODY_W, NEXT_PITCH, 0.08f);
@@ -839,15 +995,38 @@ public final class ShopUi {
         for (int i = 0; i < n; i++) {
             float x0 = fleetX(i), y1 = fleetTop(i), y0 = y1 - FLEET_CH;
             boolean sel = i == ship, hot = hoverRegion == HULL && hoverRow == i;
-            ticks(x0, y0, x0 + FLEET_CW, y1, 12, sel ? 1f : hot ? 0.6f : 0.26f);
+            panel(x0, y0, x0 + FLEET_CW, y1, sel ? 0.95f : 0.55f);
+            ticks(x0, y0, x0 + FLEET_CW, y1, 12, sel ? 1f : hot ? 0.6f : 0.3f);
             for (int t = 0; t < 3; t++)
                 pip(x0 + FLEET_CW - 18 - (2 - t) * 12, y1 - 18, h.owned[i][t], h.ownsShip(i) ? 1f : 0.35f);
         }
         ShipDef d = ShipDef.ALL[ship];
-        float head = fleetHeadY(n);
         hair(BODY_X, fleetBottom(n) - 16, BODY_W, 0.35f);
-        vhair(BODY_X + 480, fleetStatY(n, 2) - 14, head - fleetStatY(n, 2) + 28, 0.22f);
-        for (int k = 0; k < 3; k++) segs(BODY_X + 110, fleetStatY(n, k), statSegs(k, h, d));
+        float rx = fleetRadarX(), ry = fleetRadarY(n);
+        radarGrid(rx, ry, RADAR_R);
+        radarLine(rx, ry, RADAR_R, ShopStats.fractions(d, true, true), BRASS, 0.7f, 1f);
+        if (ship != h.shipIndex)
+            radarLine(rx, ry, RADAR_R, ShopStats.fractions(h, ShipDef.ALL[h.shipIndex]), LAVENDER, 0.95f, 1.5f);
+        float[] mine = ShopStats.fractions(h, d);
+        radarFill(rx, ry, RADAR_R, mine, SAF, 0.32f);
+        radarLine(rx, ry, RADAR_R, mine, SAF, 1f, 2f);
+        // the axis table's bars
+        float tx = fleetTableX();
+        for (int k = 0; k < ShopStats.AXES; k++) {
+            float cy = fleetStatY(n, k);
+            brass(0.25f);
+            ui.shapes.rect(tx + 76, cy - 2, 96, 4);
+            ui.shapes.setColor(SAF[0], SAF[1], SAF[2], 0.95f);
+            ui.shapes.rect(tx + 76, cy - 2, 96 * mine[k], 4);
+            float full = ShopStats.fractions(d, true, true)[k];
+            brass(0.9f);
+            ui.shapes.rect(tx + 76 + 96 * full - 1, cy - 5, 2, 10); // the fully upgraded mark
+        }
+        float ly = fleetStatY(n, ShopStats.AXES - 1) - 24;
+        swatch(tx, ly, SAF, true);
+        swatch(tx + 106, ly, BRASS, false);
+        if (ship != h.shipIndex) swatch(tx + 232, ly, LAVENDER, false);
+        vhair(fleetUpgX() - 24, fleetStatY(n, 5) - 8, fleetHeadY(n) - fleetStatY(n, 5) + 20, 0.22f);
     }
 
     // --- REFIT ---
@@ -871,7 +1050,22 @@ public final class ShopUi {
         }
         float cy = refitRowY(ship), x = refitColX(tier);
         ticks(x + 6, cy - 16, x + REFIT_COL_W - 6, cy + 16, 7, 1f);
-        hair(BODY_X, refitBottom(n) - 6, BODY_W, 0.22f);
+        hair(BODY_X, refitBottom(n) - 6, BODY_W, 0.35f);
+
+        // the chart: this hull as it is, and as it would be with the highlighted upgrade
+        ShipDef sd = ShipDef.ALL[ship];
+        boolean owned = h.owned[ship][tier] || tier == 0;
+        float[] before = ShopStats.fractions(h, sd);
+        float[] after = ShopStats.fractions(sd, h.owned[ship][1] || tier == 1, h.owned[ship][2] || tier == 2);
+        float rx = refitRadarX(), ry = refitRadarY(n);
+        radarGrid(rx, ry, REFIT_RADAR_R);
+        radarFill(rx, ry, REFIT_RADAR_R, before, SAF, 0.28f);
+        if (!owned) {
+            radarFill(rx, ry, REFIT_RADAR_R, after, PEACOCK, 0.22f);
+            radarLine(rx, ry, REFIT_RADAR_R, after, PEACOCK, 1f, 2f);
+        }
+        radarLine(rx, ry, REFIT_RADAR_R, before, SAF, 1f, 1.5f);
+        vhair(refitTableX() + 300, refitTableY(n, 5) - 10, refitTableY(n, 0) - refitTableY(n, 5) + 30, 0.22f);
     }
 
     // --- PATTERNS ---
@@ -887,8 +1081,59 @@ public final class ShopUi {
             } else if (hoverRegion == WEAPON && hoverRow == i) fill(BODY_X, cy - p / 2f, PAT_TABLE_W, p, 0.06f);
             else if ((i & 1) == 0) fill(BODY_X, cy - p / 2f, PAT_TABLE_W, p, 0.03f);
         }
+        panel(PAT_CARD_X, PAT_CARD_Y0, M1, BODY_TOP, 0.8f);
         ticks(PAT_CARD_X, PAT_CARD_Y0, M1, BODY_TOP, 14, 0.6f);
         hair(PAT_CARD_X + 20, BODY_TOP - 196, PAT_CARD_W - 40, 0.3f);
+
+        WeaponDef sel = WeaponDef.ALL[weapon], fit = WeaponDef.ALL[h.weaponIndex];
+        ShopStats.Shot ss = ShopStats.shot(h, sel), fs = ShopStats.shot(h, fit);
+        float bx = PAT_CARD_X + 20, bw = PAT_CARD_W - 40;
+        for (int m = 0; m < 4; m++) {
+            float cy = patChartY(m) - 13;
+            brass(0.25f);
+            ui.shapes.rect(bx, cy - 3, bw, 6);
+            float fr = ShopStats.bar(ss, m);
+            boolean ahead = ShopStats.metric(ss, m) >= ShopStats.metric(fs, m) - 0.0001f;
+            if (ahead) gold(0.95f);
+            else brass(0.9f);
+            ui.shapes.rect(bx, cy - 3, bw * fr, 6);
+            if (weapon != h.weaponIndex) { // where the pattern in hand sits on the same track
+                tone(LAVENDER, 1f);
+                ui.shapes.rect(bx + bw * ShopStats.bar(fs, m) - 1, cy - 7, 2, 14);
+            }
+        }
+        // the fan: which way and how wide it throws
+        float fx = PAT_CARD_X + 26, fy = PAT_CARD_Y0 + 36, fl = 44;
+        brass(0.5f);
+        ui.shapes.rect(fx - 3, fy - 3, 6, 6);
+        for (int i = 0; i < ss.rays; i++) {
+            float off = ss.rays == 1 ? 0 : (float) Math.toRadians(i * ss.spread / (ss.rays - 1) - ss.spread / 2f);
+            float ex = fx + (float) Math.cos(off) * fl, ey = fy + (float) Math.sin(off) * fl;
+            tone(sel.beam ? PEACOCK : SAF, 0.95f);
+            ui.shapes.rectLine(fx, fy, ex, ey, sel.beam ? 3f : 1.5f);
+            if (!sel.beam) ui.shapes.circle(ex, ey, 2.5f);
+        }
+        if (ss.rays > 1) { // the arc the fan spans
+            brass(0.4f);
+            float half = (float) Math.toRadians(ss.spread / 2f);
+            for (int k = 0; k < 12; k++) {
+                float a0 = -half + 2 * half * k / 12f, a1 = -half + 2 * half * (k + 1) / 12f;
+                ui.shapes.rectLine(fx + (float) Math.cos(a0) * fl, fy + (float) Math.sin(a0) * fl,
+                        fx + (float) Math.cos(a1) * fl, fy + (float) Math.sin(a1) * fl, 1f);
+            }
+        }
+        // two seconds of fire, one tick per shot of a held trigger
+        float sx0 = PAT_CARD_X + 116, sw = M1 - 20 - sx0, sy = PAT_CARD_Y0 + 36;
+        brass(0.3f);
+        ui.shapes.rect(sx0, sy - 1, sw, 2);
+        float gap = sel.burstGap;
+        for (float t = 0; t < 2f; t += ss.cycle)
+            for (int pu = 0; pu < ss.pulses; pu++) {
+                float tt = t + pu * gap;
+                if (tt >= 2f) break;
+                gold(0.95f);
+                ui.shapes.rect(sx0 + sw * tt / 2f - 1, sy - 8, 2, 16);
+            }
     }
 
     // --- FORGE ---
@@ -898,7 +1143,8 @@ public final class ShopUi {
         for (int l = 0; l < n; l++) {
             float x0 = forgeX(l, n), y1 = BODY_TOP, y0 = y1 - FORGE_CH;
             boolean cur = l == loka;
-            ticks(x0, y0, x0 + cw, y1, 12, cur ? 1f : 0.26f);
+            panel(x0, y0, x0 + cw, y1, cur ? 0.95f : 0.5f);
+            ticks(x0, y0, x0 + cw, y1, 12, cur ? 1f : 0.3f);
             hair(x0 + 14, y1 - 42, cw - 28, 0.22f);
             bar(x0 + 20, y1 - 160, cw - 40, forgeFrac(h, l), cur ? 1f : 0.45f);
         }
@@ -941,6 +1187,7 @@ public final class ShopUi {
     // =============================================================== BATCH PASS
     /** Art and words — batch pass. */
     public void draw(SpriteBatch batch, World w, ShipRenderer ships, WeaponCards cards) {
+        enter();
         Hangar h = w.hangar;
         int loka = w.lokaIndex, el = lokaElement(loka);
         cap = capH();
@@ -955,12 +1202,14 @@ public final class ShopUi {
             default: vaultText(batch, h); break;
         }
         footerKeys(batch);
+        leave();
     }
 
     private void drawHeader(SpriteBatch b, Hangar h) {
         float hy = HEAD_Y + 5 - cap / 2f; // text top rides HEAD_Y + 5, as the wallet always has
-        left(b, "HANGAR", M0, hy, 1f);
-        leftGold(b, "\u00B7  " + TAB_NAMES[tab], M0 + textW("HANGAR") + 14, hy, 1f);
+        left(b, "ARMOURY OF ATALA", M0, hy, 1f);
+        leftGold(b, "/  " + TAB_NAMES[tab], M0 + textW("ARMOURY OF ATALA") + 14, hy, 1f);
+        tinted(b, "FORGED IN MAYA'S FIRES  /  RECLAIMED FROM BALA", CX + 40, hy, 0, BRASS, 0.8f);
 
         int el = lokaElement(curLoka);
         b.draw(ui.icons.coin(), WALLET_X1 - WALLET_COINS_W, hy + cap / 2f - 13, 18, 18);
@@ -1057,10 +1306,10 @@ public final class ShopUi {
         left(b, "PATTERN", x0 + 16, top - 22, UiTheme.A_HINT);
         b.draw(cards.get(h.weaponIndex), cx - 44, top - 118 - 44, 88, 88);
         center(b, wd.name, cx, top - 192, 1f);
-        center(b, "DMG " + (int) wd.damage + "   CD " + wd.cooldown + "s   x" + wd.count * wd.burst,
-                cx, top - 220, UiTheme.A_LINE);
+        center(b, "DPS " + Math.round(ShopStats.shot(h, wd).dps) + "   DMG " + (int) wd.damage
+                + "   CD " + wd.cooldown + "s   x" + wd.count * wd.burst, cx, top - 220, UiTheme.A_LINE);
         String t = traits(wd);
-        center(b, t.isEmpty() ? "-" : t, cx, top - 248, UiTheme.A_HINT);
+        center(b, t.isEmpty() ? "\u2014" : t, cx, top - 248, UiTheme.A_HINT);
 
         // astra card
         x0 = bayX(2);
@@ -1089,7 +1338,15 @@ public final class ShopUi {
             if (n.ready) rightGold(b, "READY", BODY_X + BODY_W - 8, cy, 1f);
             else if (n.costText == null) right(b, "SHORT", BODY_X + BODY_W - 8, cy, UiTheme.A_HINT);
         }
-        answer(b, "FLYING " + d.name + "   \u00B7   FITTED " + wd.name, false);
+        // the quest strip
+        int bands = 0;
+        for (boolean p : h.pieces) if (p) bands++;
+        left(b, "THE VAJRA", BODY_X + 8, questY() + 14, UiTheme.A_HINT);
+        right(b, bands + " OF 7 BANDS", BODY_X + BODY_W - 8, questY() + 14, UiTheme.A_LINE);
+        wrapped(b, "Trivikrama broke the Vajrayudha and hid a band in each loka of Patala. "
+                + "Bala, son of Maya, keeps Atala's forges. Take what you need, then climb.",
+                BODY_X + 8, questY() - 8, BODY_W - 260, BRASS);
+        answer(b, "FLYING " + d.name + "   /   FITTED " + wd.name, false);
     }
 
     // --- FLEET ---
@@ -1105,12 +1362,12 @@ public final class ShopUi {
             TextureRegion r = ships.hull(i, artLevel(h, i));
             if (r != null) {
                 b.setColor(1, 1, 1, a);
-                b.draw(r, cx - 38, y1 - 62 - 38, 76, 76);
+                b.draw(r, cx - 30, y1 - 46 - 30, 60, 60);
                 b.setColor(1, 1, 1, 1);
             }
-            if (sel) centerGold(b, hd.name, cx, y1 - 112, 1f);
-            else center(b, hd.name, cx, y1 - 112, a);
-            float sy = y1 - 136;
+            if (sel) centerGold(b, hd.name, cx, y1 - 88, 1f);
+            else center(b, hd.name, cx, y1 - 88, a);
+            float sy = y1 - 108;
             if (h.shipIndex == hd.id) centerGold(b, "FLYING", cx, sy, 1f);
             else if (h.ownsShip(i) || locked) center(b, hullBuyLine(h, hd, loka), cx, sy, 0.7f);
             else priceCenter(b, cx, sy, hd.cost, 0, 0, "", h.coins >= hd.cost, 0.7f);
@@ -1118,23 +1375,40 @@ public final class ShopUi {
 
         ShipDef sel = ShipDef.ALL[ship], fly = ShipDef.ALL[h.shipIndex];
         float head = fleetHeadY(n);
-        left(b, "STAT", BODY_X + 8, head, UiTheme.A_HINT);
-        right(b, "NOW", BODY_X + 270, head, UiTheme.A_HINT);
-        right(b, "VS FLYING", BODY_X + 400, head, UiTheme.A_HINT);
-        left(b, "UPGRADES", BODY_X + 500, head, UiTheme.A_HINT);
-        for (int k = 0; k < 3; k++) {
+        float tx = fleetTableX(), ux = fleetUpgX();
+        radarLabels(b, fleetRadarX(), fleetRadarY(n), RADAR_R);
+        center(b, sel.flavor.toUpperCase(), fleetRadarX(), fleetRadarY(n) - RADAR_R - 32, UiTheme.A_HINT);
+        center(b, ShopStats.role(sel), fleetRadarX(), fleetRadarY(n) - RADAR_R - 50, UiTheme.A_LINE);
+
+        leftGold(b, sel.name, tx, head, 1f);
+        right(b, "NOW", tx + 232, head, UiTheme.A_HINT);
+        right(b, "VS FLYING", tx + 330, head, UiTheme.A_HINT);
+        float[] now = ShopStats.raw(sel, h.owned[ship][1], h.owned[ship][2]);
+        float[] flyRaw = ShopStats.raw(fly, h.owned[fly.id][1], h.owned[fly.id][2]);
+        for (int k = 0; k < ShopStats.AXES; k++) {
             float cy = fleetStatY(n, k);
-            left(b, STAT_NAMES[k], BODY_X + 8, cy, UiTheme.A_HINT);
-            right(b, statStr(k, h, sel), BODY_X + 270, cy, 1f);
-            float dv = statValue(k, h, sel) - statValue(k, h, fly);
-            boolean same = sel == fly || Math.abs(dv) < 0.5f;
-            right(b, same ? "-" : (dv > 0 ? "+" : "") + (int) dv, BODY_X + 400, cy,
-                    !same && dv > 0 ? 1f : UiTheme.A_HINT);
+            left(b, ShopStats.AXIS_NAMES[k], tx, cy, UiTheme.A_LINE);
+            right(b, ShopStats.axisText(k, now[k]), tx + 232, cy, 1f);
+            int pct = ShopStats.versusPct(now[k], flyRaw[k]);
+            if (sel == fly) continue;
+            if (pct == 0) right(b, "same", tx + 330, cy, UiTheme.A_HINT);
+            else tinted(b, ShopStats.versus(now[k], flyRaw[k]), tx + 330, cy, 1, pct > 0 ? PEACOCK : ROSE, 1f);
+        }
+        float ly = fleetStatY(n, ShopStats.AXES - 1) - 24;
+        tinted(b, "THIS HULL", tx + 22, ly, -1, CREAM, UiTheme.A_LINE);
+        tinted(b, "UPGRADED", tx + 128, ly, -1, BRASS, 1f);
+        if (ship != h.shipIndex) tinted(b, "FLYING", tx + 254, ly, -1, LAVENDER, 1f);
+
+        left(b, "UPGRADES", ux, head, UiTheme.A_HINT);
+        for (int k = 1; k < 3; k++) {
             ShipDef.Upgrade u = sel.upgrades[k];
-            left(b, u.label + "  " + u.name, BODY_X + 500, cy, UiTheme.A_LINE);
+            float cy = head - 28 - (k - 1) * 58;
+            if (h.owned[ship][k]) tinted(b, u.label + "  " + u.name, ux, cy, -1, CREAM, 1f);
+            else left(b, u.label + "  " + u.name, ux, cy, UiTheme.A_LINE);
+            tinted(b, tierEffect(sel, k), ux, cy - 20, -1, BRASS, 1f);
             float xr = BODY_X + BODY_W - 8;
-            if (h.owned[ship][k]) right(b, "OWNED", xr, cy, 0.7f);
-            else if (!h.ownsShip(ship)) right(b, "-", xr, cy, UiTheme.A_HINT);
+            if (h.owned[ship][k]) rightGold(b, "OWNED", xr, cy, 1f);
+            else if (!h.ownsShip(ship)) right(b, "\u2014", xr, cy, UiTheme.A_HINT);
             else priceRight(b, xr, cy, u.cost, k == 2 ? Hangar.SHARD_COST : 0, lokaElement(loka), "",
                         tierAffordable(h, sel, k), UiTheme.A_HINT);
         }
@@ -1170,19 +1444,48 @@ public final class ShopUi {
             for (int t = 0; t < 3; t++) {
                 float xr = refitColX(t) + REFIT_COL_W - 14;
                 if (h.owned[i][t]) right(b, "OWNED", xr, cy, 0.7f);
-                else if (!ownedHull) right(b, "-", xr, cy, UiTheme.A_HINT);
+                else if (!ownedHull) right(b, "\u2014", xr, cy, UiTheme.A_HINT);
                 else priceRight(b, xr, cy, d.upgrades[t].cost, t == 2 ? Hangar.SHARD_COST : 0, el, "",
                             tierAffordable(h, d, t), UiTheme.A_HINT);
             }
         }
 
         ShipDef.Upgrade u = sd.upgrades[tier];
-        float bottom = refitBottom(n);
-        leftGold(b, u.label + "   " + u.name + "   \u00B7   " + tierEffect(sd, tier), BODY_X + 8, bottom - 34, 1f);
         boolean owned = h.owned[ship][tier];
-        String after = statAfter(0, h, sd, u, owned) + "     " + statAfter(1, h, sd, u, owned)
-                + "     " + statAfter(2, h, sd, u, owned);
-        left(b, after, BODY_X + 8, bottom - 62, UiTheme.A_LINE);
+        float bottom = refitBottom(n);
+        radarLabels(b, refitRadarX(), refitRadarY(n), REFIT_RADAR_R);
+        float ty0 = bottom - 14;
+        leftGold(b, u.label + "   " + u.name, BODY_X + 8, ty0, 1f);
+        tinted(b, tier == 0 ? "the hull itself" : tierEffect(sd, tier),
+                BODY_X + 24 + textW(u.label + "   " + u.name), ty0, -1, BRASS, 1f);
+
+        // before -> after, one row per axis: the part of an upgrade people actually want to know
+        float tx = refitTableX();
+        float hy2 = bottom - 34;
+        left(b, "BEFORE", tx + 80, hy2, UiTheme.A_HINT);
+        left(b, "AFTER", tx + 172, hy2, UiTheme.A_HINT);
+        right(b, "CHANGE", tx + 292, hy2, UiTheme.A_HINT);
+        float[] was = ShopStats.raw(sd, h.owned[ship][1], h.owned[ship][2]);
+        float[] will = ShopStats.raw(sd, h.owned[ship][1] || tier == 1, h.owned[ship][2] || tier == 2);
+        for (int k = 0; k < ShopStats.AXES; k++) {
+            float cy = refitTableY(n, k);
+            left(b, ShopStats.AXIS_NAMES[k], tx, cy, UiTheme.A_LINE);
+            left(b, ShopStats.axisText(k, was[k]), tx + 80, cy, 1f);
+            int pct = ShopStats.versusPct(will[k], was[k]);
+            if (owned || pct == 0) {
+                left(b, owned ? "owned" : "same", tx + 172, cy, UiTheme.A_HINT);
+            } else {
+                tinted(b, ShopStats.axisText(k, will[k]), tx + 172, cy, -1, PEACOCK, 1f);
+                tinted(b, ShopStats.versus(will[k], was[k]), tx + 292, cy, 1, pct > 0 ? PEACOCK : ROSE, 1f);
+            }
+        }
+        float hx = tx + 322;
+        left(b, "WHAT THE AXES MEAN", hx, hy2, UiTheme.A_HINT);
+        for (int k = 0; k < ShopStats.AXES; k++) {
+            float cy = refitTableY(n, k);
+            tinted(b, ShopStats.AXIS_NAMES[k], hx, cy, -1, CREAM, 0.9f);
+            tinted(b, ShopStats.AXIS_HELP[k], hx + 70, cy, -1, BRASS, 1f);
+        }
 
         if (owned) answer(b, "OWNED", false);
         else if (!h.ownsShip(sd.id)) answer(b, "OWN THE HULL FIRST", false);
@@ -1200,7 +1503,8 @@ public final class ShopUi {
         left(b, "PATTERN", BODY_X + 44, hy, UiTheme.A_HINT);
         right(b, "DMG", BODY_X + 300, hy, UiTheme.A_HINT);
         right(b, "CD", BODY_X + 376, hy, UiTheme.A_HINT);
-        right(b, "SHOTS", BODY_X + 450, hy, UiTheme.A_HINT);
+        right(b, "SHOTS", BODY_X + 442, hy, UiTheme.A_HINT);
+        right(b, "DPS", BODY_X + 524, hy, UiTheme.A_HINT);
         right(b, "STATE", BODY_X + PAT_TABLE_W - 8, hy, UiTheme.A_HINT);
         for (int i = 0; i < n; i++) {
             WeaponDef d = WeaponDef.ALL[i];
@@ -1211,7 +1515,8 @@ public final class ShopUi {
             else left(b, d.name, BODY_X + 44, cy, owned ? 1f : afford ? 0.8f : 0.55f);
             right(b, Integer.toString((int) d.damage), BODY_X + 300, cy, UiTheme.A_LINE);
             right(b, d.cooldown + "s", BODY_X + 376, cy, UiTheme.A_LINE);
-            right(b, "x" + d.count * d.burst, BODY_X + 450, cy, UiTheme.A_LINE);
+            right(b, "x" + d.count * d.burst, BODY_X + 442, cy, UiTheme.A_LINE);
+            right(b, Integer.toString(Math.round(ShopStats.shot(h, d).dps)), BODY_X + 524, cy, 1f);
             float xr = BODY_X + PAT_TABLE_W - 8;
             if (h.weaponIndex == i) rightGold(b, "FITTED", xr, cy, 1f);
             else if (owned) right(b, "OWNED", xr, cy, 0.7f);
@@ -1219,27 +1524,42 @@ public final class ShopUi {
         }
 
         // the detail card
-        WeaponDef sel = WeaponDef.ALL[weapon];
+        WeaponDef sel = WeaponDef.ALL[weapon], fit = WeaponDef.ALL[h.weaponIndex];
         boolean owned = h.weaponOwned[weapon];
         float cx = PAT_CARD_X + PAT_CARD_W / 2f;
         b.setColor(1, 1, 1, owned ? 1f : 0.6f);
-        b.draw(cards.get(weapon), cx - 48, BODY_TOP - 72 - 48, 96, 96);
+        b.draw(cards.get(weapon), cx - 36, BODY_TOP - 52 - 36, 72, 72);
         b.setColor(1, 1, 1, 1);
-        center(b, sel.name, cx, BODY_TOP - 150, 1f);
-        float sy = BODY_TOP - 174;
+        center(b, sel.name, cx, BODY_TOP - 104, 1f);
+        float sy = BODY_TOP - 124;
         if (h.weaponIndex == weapon) centerGold(b, weaponState(h, sel), cx, sy, 1f);
         else if (owned) center(b, weaponState(h, sel), cx, sy, 0.7f);
         else priceCenter(b, cx, sy, sel.cost, 0, 0, "", h.coins >= sel.cost, UiTheme.A_HINT);
+        wrapped(b, ShopStats.howItPlays(sel), PAT_CARD_X + 20, BODY_TOP - 142, PAT_CARD_W - 40, BRASS);
 
-        float xl = PAT_CARD_X + 20, xr = M1 - 20, y = BODY_TOP - 222;
-        for (String[] row : statRows(sel)) {
-            if (textW(row[0]) + textW(row[1]) + 16 > xr - xl) { // long value: it takes its own line
-                left(b, row[0], xl, y, UiTheme.A_HINT);
-                y -= 22;
-                right(b, row[1], xr, y, 1f);
-            } else pair(b, row[0], row[1], xl, xr, y);
-            y -= 26;
+        ShopStats.Shot ss = ShopStats.shot(h, sel), fs = ShopStats.shot(h, fit);
+        float xl = PAT_CARD_X + 20, xr = M1 - 20;
+        for (int m = 0; m < 4; m++) {
+            float cy = patChartY(m);
+            left(b, ShopStats.METRIC_NAMES[m], xl, cy, UiTheme.A_LINE);
+            right(b, ShopStats.metricText(ss, m), xr, cy, 1f);
         }
+        float vy = BODY_TOP - 210;
+        if (weapon == h.weaponIndex) {
+            tinted(b, "THE ONE IN YOUR HANDS", xl, vy, -1, LAVENDER, 1f);
+        } else {
+            int dp = ShopStats.versusPct(ss.dps, fs.dps), rp = ShopStats.versusPct(ss.reach, fs.reach);
+            String reach = "REACH " + ShopStats.versus(ss.reach, fs.reach);
+            left(b, "VS FITTED", xl, vy, UiTheme.A_HINT);
+            tinted(b, "DPS " + ShopStats.versus(ss.dps, fs.dps), xr - textW(reach) - 14,
+                    vy, 1, dp >= 0 ? PEACOCK : ROSE, 1f);
+            tinted(b, reach, xr, vy, 1, rp >= 0 ? PEACOCK : ROSE, 1f);
+        }
+        float fy = PAT_CARD_Y0 + 36;
+        left(b, ss.rays > 1 ? Math.round(ss.spread) + " deg FAN" : sel.beam ? "BEAM" : "STRAIGHT",
+                PAT_CARD_X + 20, fy - 26, UiTheme.A_HINT);
+        left(b, "2 SECONDS OF FIRE", PAT_CARD_X + 116, fy - 26, UiTheme.A_HINT);
+        left(b, "NUMBERS WITH YOUR HULL", xl, patChartY(3) - 30, UiTheme.A_HINT);
 
         if (owned) answer(b, weaponBuyLine(h, sel), false);
         else {
@@ -1274,9 +1594,9 @@ public final class ShopUi {
         boolean ok = validLoka(loka);
         float xl = BODY_X + 8, xr = BODY_X + 500;
         pair(b, "EFFECT", astraEffect(), xl, xr, rule - 52);
-        pair(b, "HELD", ok ? h.shards[el] + " " + World.TATVA[el].toLowerCase() : "-", xl, xr, rule - 78);
-        pair(b, "BANKED", ok ? h.forgeProgress[loka] + "/" + Math.max(1, h.forgeNeed(loka)) : "-", xl, xr, rule - 104);
-        pair(b, "CHARGES", ok ? Integer.toString(h.forgeCharges[loka]) : "-", xl, xr, rule - 130);
+        pair(b, "HELD", ok ? h.shards[el] + " " + World.TATVA[el].toLowerCase() : "\u2014", xl, xr, rule - 78);
+        pair(b, "BANKED", ok ? h.forgeProgress[loka] + "/" + Math.max(1, h.forgeNeed(loka)) : "\u2014", xl, xr, rule - 104);
+        pair(b, "CHARGES", ok ? Integer.toString(h.forgeCharges[loka]) : "\u2014", xl, xr, rule - 130);
         if (ok) center(b, forgeNext(h, loka), (BODY_X + 560 + M1 - 8) / 2f, rule - 110, UiTheme.A_LINE);
 
         answer(b, forgeLabel(h, loka), ok && h.forgeCharges[loka] > 0);

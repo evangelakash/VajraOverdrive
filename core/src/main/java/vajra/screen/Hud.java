@@ -71,7 +71,7 @@ public final class Hud {
     //     reads "-" (a delay to yourself is not a thing). Hidden in single-player, the hangar and
     //     the results card. ---
     public static final float CREW_X = HudBars.X, CREW_TOP = HudBars.BOT - 10, CREW_PITCH = 20;
-    public static final float CREW_W = 170;
+    public static final float CREW_W = 200;
     private static final float CREW_NAME_W = 100;
     private static final float CREW_PING_R = CREW_X + CREW_W - 12;
 
@@ -238,9 +238,25 @@ public final class Hud {
     private long crewEpoch = -1;
     private int[] crewIds = new int[0];
     private String[] crewNames = new String[0];
-    private static final int CREW_PING_GREEN = 90; // ms: at/below reads quick, above reads slow
+    private static final int CREW_PING_GREEN = 80; // ms: at/below reads green, to 160 amber, above red
+
+    private int leftSeen;
+    private String leftNote = "";
+    private long leftUntil;
+
+    /** A pilot who leaves is announced once, centre screen, for four seconds. */
+    private void watchLeavers() {
+        vajra.net.Session s = Net.session;
+        if (s == null || !Net.active()) return;
+        if (s.leftCount() != leftSeen) {
+            leftSeen = s.leftCount();
+            leftNote = s.lastLeft().toUpperCase(Locale.ROOT) + " LEFT THE RUN";
+            leftUntil = System.currentTimeMillis() + 4000;
+        }
+    }
 
     private void refreshCrew(World w) {
+        watchLeavers();
         vajra.net.Session s = Net.session;
         if (s == null || !Net.active() || w.runEnded()
                 || (s.epoch() == crewEpoch && crewNames.length == s.count())) return;
@@ -292,10 +308,20 @@ public final class Hud {
             float y = CREW_TOP - 17 - i * CREW_PITCH;
             ui.small.setColor(SeatColors.of(crewIds[i]));
             ui.small.draw(batch, crewNames[i], CREW_X + 28, y + cap);
-            int p = s.pingTo(crewIds[i]);
-            ui.small.setColor(p <= CREW_PING_GREEN && p > 0 ? SeatColors.GO
-                    : p > 0 ? SeatColors.WAIT : Color.GRAY);
-            ui.right(batch, ui.small, p > 0 ? Integer.toString(p) : "-", CREW_PING_R, y + cap);
+            boolean me = crewIds[i] == s.myId();
+            if (me && s.isHost()) { // the host is the hub: there is no round trip to itself
+                ui.small.setColor(Color.LIGHT_GRAY);
+                ui.right(batch, ui.small, "HOST", CREW_PING_R, y + cap);
+                continue;
+            }
+            int p = me ? s.pingOf(s.myId()) : s.pingTo(crewIds[i]); // my own row shows MY ping to the hub
+            ui.small.setColor(p <= 0 ? Color.GRAY : p <= CREW_PING_GREEN ? SeatColors.GO
+                    : p <= 160 ? Color.GOLD : SeatColors.WAIT);
+            ui.right(batch, ui.small, p > 0 ? p + " MS" : "...", CREW_PING_R, y + cap);
+        }
+        if (System.currentTimeMillis() < leftUntil) { // someone left: say so, once
+            ui.small.setColor(SeatColors.WAIT);
+            ui.centered(batch, ui.small, leftNote, Ui.UI_H - 92);
         }
         ui.small.setColor(Color.WHITE);
     }

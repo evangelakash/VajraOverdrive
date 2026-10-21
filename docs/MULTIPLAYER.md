@@ -338,3 +338,26 @@ LAN play and the internet relay play step by step, with the acceptance sheet at 
 | A door the router refuses | UPnP and NAT-PMP are both refused by some routers (and by every router behind a second NAT). The bundled relay is the fallback, but a relay on a machine with no public address cannot be reached — such a host can only play on its own LAN | when a public rendezvous is affordable |
 | The snapshot caps the fight at 64 foes and 12 drops | the nearest to any seat, so the fight in front of you is whole; the far side of the map is not | when the world's roster grows past one screenful |
 
+
+---
+
+## Co-op playtest fixes (joiner lag, smoke, ping, leavers, headings)
+
+- **Joiner lag, trails, smoke that never left.** The guest's world (`World.updateSeat`) never
+  aged or retired its visual effects, so every exhaust puff, smoke wisp, ring and spark it added
+  stayed on screen and the list grew every frame. It now ages and retires them like the host.
+  (`CoOpStreamTest.aGuestRetiresItsEffects`)
+- **Smoother foes on the guest.** The host's swarm snapshot flies at 20 Hz (was 10), and a ghost
+  foe coasts on its measured velocity between snapshots instead of waiting.
+- **Other pilots' headings.** The SHIP plane carries the hull's facing (27-byte body); the mirror
+  eases to it and a chevron in the pilot's seat colour is drawn ahead of every other hull.
+- **Ping.** The host used to time a guest from a roster stamp the guest echoed on its own
+  schedule, so the host's read of a guest could be up to 2 s of nonsense. A guest now measures its
+  own round trip (a PING each second) and reports it; the host puts every pilot's ping on the
+  roster. The crew panel shows `NN MS` for everyone (green to 80, amber to 160, red above), your
+  own row shows your ping to the host, and the host's row reads `HOST`.
+- **Leavers.** `Session.leftCount()/lastLeft()` record a departure (BYE, timeout, or a pilot
+  missing from the roster); the HUD announces "NAME LEFT THE RUN" for four seconds. The partner's
+  hull is removed when the seat is gone.
+
+Not verified: play over a real Wi-Fi link between two machines.

@@ -56,9 +56,15 @@ class CoOpStreamTest {
         }
     }
 
+    /** Every room starts on an empty wire: a leftover endpoint from another test steals its ports. */
+    private static Bus fresh() {
+        Bus.REGISTRY.clear();
+        return new Bus(30000);
+    }
+
     /** A host and two guests, all LIVE, sharing one bus. */
     private static final class Room {
-        final Bus host = new Bus(30000);
+        final Bus host = fresh();
         final Bus g1 = host.join(), g2 = host.join();
         final Session hs, s1, s2;
         final World hw, w1, w2;
@@ -170,5 +176,47 @@ class CoOpStreamTest {
                 "the guest measures the hub it is talking to: " + r.s1.pingTo(Session.HOST_ID));
         assertEquals(0, r.s1.pingTo(r.s1.myId()), "and never a delay to itself");
         assertTrue(r.hs.pingTo(1) > 0, "the hub measures its guest: " + r.hs.pingTo(1));
+    }
+
+    /** THE JOINER'S LEAK: a guest's world never aged its effects, so smoke, exhaust and rings
+     *  stayed on screen for ever and the list grew every frame. */
+    @Test
+    void aGuestRetiresItsEffects() {
+        Room r = new Room();
+        for (int i = 0; i < 40; i++) r.w1.addEffect(vajra.world.Effect.smoke(0, 0, 0, 0, 1, 1, 1));
+        assertEquals(40, r.w1.effects.size());
+        for (int i = 0; i < 60 * 8; i++) r.w1.update(1 / 60f, vajra.ship.ShipControls.NONE);
+        assertTrue(r.w1.effects.size() < 5, "old smoke is gone after eight seconds: " + r.w1.effects.size());
+    }
+
+    /** The other pilot's nose: the heading rides the SHIP plane and eases in on the mirror. */
+    @Test
+    void thePartnersHeadingCrossesTheWire() {
+        Room r = new Room();
+        r.hw.ship.facing = 0f; // the host points east
+        for (int i = 0; i < 30; i++) r.beat();
+        assertNotNull(r.w1.partner, "the guest sees the host's hull");
+        assertEquals(0f, vajra.world.World.wrapAngle(r.w1.partner.facing), 0.15f, "and which way it points");
+    }
+
+    /** The ping each pilot reads is the round trip, not a stale roster age. */
+    @Test
+    void everyoneReadsEveryonesPing() {
+        Room r = new Room();
+        for (int i = 0; i < 40; i++) r.beat();
+        r.hs.update(System.currentTimeMillis() + 3000);
+        assertTrue(r.s1.pingOf(r.s1.myId()) < 500, "a loopback ping is tiny: " + r.s1.pingOf(r.s1.myId()));
+    }
+
+    /** A pilot who leaves is noticed on the hub and on the other guest. */
+    @Test
+    void aDepartureIsAnnounced() {
+        Room r = new Room();
+        int before = r.s2.leftCount();
+        r.s1.leave();
+        for (int i = 0; i < 40; i++) r.beat();
+        assertTrue(r.hs.leftCount() > 0, "the hub saw them go");
+        assertEquals("VARUNA", r.hs.lastLeft());
+        assertTrue(r.s2.leftCount() > before, "so did the other guest");
     }
 }

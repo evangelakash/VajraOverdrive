@@ -371,6 +371,10 @@ public final class WorldRenderer {
             seatBar(shapes, world.ship, s.myId()); // my own seat, not seat 0's
             if (world.partner != null) seatBar(shapes, world.partner, world.partnerSeat);
             for (World.SeatHull gh : world.extras) if (gh.ship != null) seatBar(shapes, gh.ship, gh.seat);
+            // the other pilots' headings: a coloured nose-chevron ahead of each hull, so which way
+            // they point (and so shoot) is never a guess
+            if (world.partner != null) noseMark(shapes, world.partner, world.partnerSeat);
+            for (World.SeatHull gh : world.extras) if (gh.ship != null) noseMark(shapes, gh.ship, gh.seat);
         }
         shapes.end();
 
@@ -382,6 +386,15 @@ public final class WorldRenderer {
             if (gh.ship != null) shipR.draw(batch, gh.ship, world.time());
         for (Effect e : world.effects) fx.draw(batch, e);
         batch.end();
+    }
+
+    /** A chevron in the pilot's seat colour, 34 px ahead of the hull along its facing. */
+    private void noseMark(ShapeRenderer sr, vajra.ship.Ship h, int seat) {
+        float c = (float) Math.cos(h.facing), n = (float) Math.sin(h.facing);
+        float tx = h.x + c * 40, ty = h.y + n * 40;       // tip
+        float bx = h.x + c * 28, by = h.y + n * 28;       // base centre
+        sr.setColor(vajra.screen.SeatColors.of(seat));
+        sr.triangle(tx, ty, bx - n * 6, by + c * 6, bx + n * 6, by - c * 6);
     }
 
     private void shieldLayer(World world, OrthographicCamera camera) {

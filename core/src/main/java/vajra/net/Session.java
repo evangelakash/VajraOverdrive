@@ -32,12 +32,14 @@ public final class Session {
     }
 
     public static final int MAX = 4;          // roster cap: four pilots, four seat colours
+    public static final int PING_EVERY = 1000; // a guest's round-trip probe, ms
     public static final int HEARTBEAT = 2000; // roster broadcast / ping period, ms
     public static final int TIMEOUT = 6000;   // silence that loses a pilot, ms
 
     private final Transport net;
     private final String myName;
     private final SocketAddress hubAddr;                       // client only; null = I am the hub
+    private long nextPing;
     private final ArrayList<Msg.Member> members = new ArrayList<>(); // host: authoritative; client: the mirror
     private final HashMap<Integer, Long> lastSeen = new HashMap<>(); // host: per member; client: [myId] = the host
     private final ConcurrentHashMap<Integer, SocketAddress> addrOf = new ConcurrentHashMap<>();
@@ -98,6 +100,11 @@ public final class Session {
             nextBeat = now + HEARTBEAT;
             beat(now);
         }
+        if (!isHost() && now >= nextPing
+                && (state == State.LIVE || state == State.HANDOFF || state == State.RUN)) {
+            nextPing = now + PING_EVERY; // the ping is read live, once a second, not every 2 s
+            ping();
+        }
         if (state == State.JOINING) {
             if (joinedAt < 0) joinedAt = now;
             if (now - joinedAt > 20000) { // ten unanswered HELLOs
@@ -126,7 +133,6 @@ public final class Session {
         } else if (state == State.JOINING) {
             sayHello();
         } else if (state == State.LIVE || state == State.HANDOFF || state == State.RUN) {
-            ping();
             if (now - lastSeen.getOrDefault(myId, now) > TIMEOUT) {
                 state = State.LOST;
                 status = "HOST LOST";
@@ -194,7 +200,10 @@ public final class Session {
             case Msg.RESULT:  if (isHost()) onResult(m); break;
             case Msg.PING:    if (isHost()) {
                                   lastSeen.put(m.id, now);
-                                  measure(m); // the client's echo of my roster stamp = my RTT to them
+                                  if (m.rtt > 0 && m.rtt < 5000) { // the guest's own read, smoothed here too
+                                      pings.merge(m.id, (float) m.rtt, (old, add) -> old <= 0 ? add : old * 0.5f + add * 0.5f);
+                                      epoch++;
+                                  }
                                   SocketAddress back = addrOf.get(m.id);
                                   if (back != null) net.send(Msg.pack(m), back); // echo it unchanged
                               } else measureEcho(m); // the echo of my own stamp = my RTT to the hub
@@ -325,9 +334,22 @@ public final class Session {
         }
     }
 
+    private String leftName = "";
+    private int leftCount;
+
+    /** Who last left the run, and how many have: the HUD announces each departure once. */
+    public String lastLeft() { return leftName; }
+    public int leftCount() { return leftCount; }
+
+    private void noteLeft(String name) {
+        leftName = name == null || name.isEmpty() ? "A PILOT" : name;
+        leftCount++;
+    }
+
     private void drop(int id, String why) {
         for (int i = members.size() - 1; i >= 0; i--) {
             if (members.get(i).id == id) {
+                noteLeft(members.get(i).name);
                 members.remove(i);
                 addrOf.remove(id);
                 lastSeen.remove(id);
@@ -375,7 +397,7 @@ public final class Session {
         m.id = myId;
         m.num = System.currentTimeMillis();
         myStamps[stampAt = (stampAt + 1) & 3] = m.num;
-        m.stamp = rosterStamp; // the host reads its own stamp back with the pilot's echo
+        m.rtt = pingOf(myId); // my own measured round trip: the host cannot time me honestly itself
         net.send(Msg.pack(m), hubAddr);
     }
 
@@ -473,10 +495,16 @@ public final class Session {
     }
 
     private void mirror(ArrayList<Msg.Member> truth) {
+        if (truth != null && !members.isEmpty()) // someone the host no longer lists has left
+            for (Msg.Member old : members) {
+                boolean still = false;
+                for (Msg.Member now : truth) if (now.id == old.id) { still = true; break; }
+                if (!still && old.id != myId) noteLeft(old.name);
+            }
         members.clear();
         if (truth != null) members.addAll(truth);
         if (truth != null) // the host's measures ride in; my own row keeps my local read fresher
-            for (Msg.Member member : truth) if (member.ping > 0) pings.put(member.id, (float) member.ping);
+            for (Msg.Member member : truth) if (member.ping > 0 && member.id != myId) pings.put(member.id, (float) member.ping);
         epoch++;
     }
 

@@ -24,7 +24,7 @@ public final class GameWire {
 
     public static final int SHIP = 2;    // both ways, 30 Hz: one hull's pose
     public static final int SHOT = 3;    // both ways, per shot: one round, def-less ghost
-    public static final int SWARM = 4;   // host -> guests, 10 Hz: foes + ground loot + run bits
+    public static final int SWARM = 4;   // host -> guests, 20 Hz: foes + ground loot + run bits
     public static final int PAIN = 5;    // hub -> owner: a bullet touch, a shove, a kill credit
     public static final int TAKE = 6;    // guest -> hub: I swept loot id N on my machine
     public static final int ASTRA = 7;   // guest -> hub: my release named these foes; arm them
@@ -32,7 +32,7 @@ public final class GameWire {
     public static final int PAIN_BULLET = 0, PAIN_SHOVE = 1, PAIN_KILL = 2;
 
     // body widths after [tag][senderId]; edges below are the pack/unpack pairs' contract
-    static final int SHIP_FIELDS = 23; // def u8, hp u8, x y vx vy sentClock f32, flags u8
+    static final int SHIP_FIELDS = 27; // def u8, hp u8, x y vx vy sentClock f32, flags u8, facing f32
     static final int SHOT_FIELDS = 28; // hostile u8, x y vx vy dmg radius f32, rgb u8
     static final int FOE_FIELDS = 12;  // id u16, x y f32, flavour u8, hp u8
     static final int LOOT_FIELDS = 13; // id u16, type u8, variant u8, x y f32
@@ -45,7 +45,7 @@ public final class GameWire {
     static final int PAIN_FIELDS = 18; // target u8, kind u8, a i64, b c f32
     static final int TAKE_FIELDS = 2;  // pickupId u16
 
-    static final float SHIP_HZ = 1 / 30f, SWARM_HZ = 1 / 10f;
+    static final float SHIP_HZ = 1 / 30f, SWARM_HZ = 1 / 20f;
 
     /** One-frame send cadence, from each machine's own world. Screens (and the headless
      *  gate) call this every frame; the beat counters live on the world seat. */
@@ -90,6 +90,7 @@ public final class GameWire {
         Bin.putFloat(out, 16, w.ship.vy);
         Bin.putFloat(out, 20, w.clock); // the pose's birth: the reader integrates the flight age
         out[24] = (byte) (w.ship.iFrames > 0 ? 1 : 0);
+        Bin.putFloat(out, 25, w.ship.facing); // where the nose points: the other pilot reads it
         s.sendPlane(SHIP, out);
     }
 
@@ -276,10 +277,10 @@ public final class GameWire {
                 // the partner is the senior hull (the host's on a guest, pilot 1's on the host);
                 // any further seat lands on the extra mirrors — three and four read the same way
                 if (w.clientSeat ? sender == 0 : sender == 1) {
-                    applyPartner(w, body, off);
+                    applyPartner(w, body, off, len);
                     w.partnerSeat = sender; // whose hull the mirror speaks for
                 } else {
-                    applyExtra(w, sender, body, off);
+                    applyExtra(w, sender, body, off, len);
                 }
                 break;
             case SHOT:
@@ -315,7 +316,7 @@ public final class GameWire {
      *  the stale velocity over that age lands the hull where it is now, not where it was.
      *  The partner hull keeps its long-held fields on the world; the extra seats share the
      *  same law through their SeatHull mirrors. */
-    static void applyPartner(World w, byte[] body, int o) {
+    static void applyPartner(World w, byte[] body, int o, int len) {
         int defIdx = body[o] & 0xFF;
         float frac = (body[o + 1] & 0xFF) / 255f;
         if (w.partner == null || w.partnerShipIdx != defIdx) {
@@ -323,10 +324,10 @@ public final class GameWire {
                     ShipDef.ALL[defIdx], w.hangar);
             w.partnerShipIdx = defIdx;
         }
-        applyPose(w.partner, w, body, o, frac);
+        applyPose(w.partner, w, body, o, len, frac);
     }
 
-    static void applyExtra(World w, int seat, byte[] body, int o) {
+    static void applyExtra(World w, int seat, byte[] body, int o, int len) {
         World.SeatHull x = w.extra(seat);
         if (x == null) { x = new World.SeatHull(seat); w.extras.add(x); }
         int defIdx = body[o] & 0xFF;
@@ -336,11 +337,11 @@ public final class GameWire {
                     ShipDef.ALL[defIdx], w.hangar);
             x.art = defIdx;
         }
-        applyPose(x.ship, w, body, o, frac);
+        applyPose(x.ship, w, body, o, len, frac);
     }
 
     /** Shared pose lift, exact numbers for both mirror kinds. */
-    static void applyPose(Ship p, World w, byte[] body, int o, float frac) {
+    static void applyPose(Ship p, World w, byte[] body, int o, int len, float frac) {
         p.x = Bin.getFloat(body, o + 2);
         p.y = Bin.getFloat(body, o + 6);
         p.vx = Bin.getFloat(body, o + 10);
@@ -350,6 +351,11 @@ public final class GameWire {
         p.y += p.vy * age;
         p.hp = frac * p.maxHp();
         p.iFrames = (body[o + 22] & 0xFF) != 0 ? 0.35f : 0;
+        if (len >= SHIP_FIELDS) { // the pilot's heading; an older client without it keeps the last
+            float face = Bin.getFloat(body, o + 23);
+            if (Float.isNaN(p.faceGoal)) p.facing = face; // the first packet snaps, the rest ease
+            p.faceGoal = face;
+        }
     }
 
     /** A round anyone fired: its owner credits the kill it lands (host side only). */

@@ -110,7 +110,8 @@ public class Enemy {
     // never simulates (the host runs the fight) and glides to its last snapshot truth.
     public int netId;
     public boolean ghost, gone, seen;
-    public float gx, gy;
+    public float gx, gy;        // a ghost's newest truth from the host
+    public float gvx, gvy, gAt; // its measured velocity and the clock it was last heard
     public boolean routed;
     public float routAge; // seconds since this unit started running
     public boolean betrayed; // HATAKA: the betray ring has already vented at half hull

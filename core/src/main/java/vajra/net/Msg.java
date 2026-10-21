@@ -23,6 +23,7 @@ public final class Msg {
     public String name;               // HELLO
     public boolean flag;              // READY
     public long num;                  // START: the run seed; ROSTER: the host's clock stamp
+    public int rtt;                   // PING: the sender's own measured round trip to the hub, ms
     public long stamp;                // PING: the echoed host stamp the client reports
     public ArrayList<Member> members; // WELCOME / ROSTER
 

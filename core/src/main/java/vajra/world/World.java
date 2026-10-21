@@ -226,14 +226,8 @@ public class World {
         regionEntry();
         for (Orb o : orbs) o.update(dt, this, orbRng);
         clock += dt;
-        if (partner != null) { // the partner glide between packets, like everything else
-            partner.x += partner.vx * dt;
-            partner.y += partner.vy * dt;
-        }
-        for (SeatHull x : extras) if (x.ship != null) { // extras glide too
-            x.ship.x += x.ship.vx * dt;
-            x.ship.y += x.ship.vy * dt;
-        }
+        if (partner != null) glideHull(partner, dt); // the partner glides between packets
+        for (SeatHull x : extras) if (x.ship != null) glideHull(x.ship, dt);
         // index loop: a summon (boss blink) may append to the roster mid-iteration
         for (int i = 0; i < enemies.size(); i++) enemies.get(i).update(dt, this, clock);
         updateAstra(dt); // the forged weapon's cubes, after the roster has moved
@@ -314,17 +308,19 @@ public class World {
         regionEntry();
         guestCheckpoints();
         for (Orb o : orbs) o.update(dt, this, orbRng); // the same drift the host's orbs take
-        if (partner != null) {
-            partner.x += partner.vx * dt;
-            partner.y += partner.vy * dt;
-        }
-        for (SeatHull x : extras) if (x.ship != null) { // extras glide here too
-            x.ship.x += x.ship.vx * dt;
-            x.ship.y += x.ship.vy * dt;
-        }
+        if (partner != null) glideHull(partner, dt); // the partner glides between packets
+        for (SeatHull x : extras) if (x.ship != null) glideHull(x.ship, dt);
         clock += dt;
         updateAstra(dt);
         ghostGlide(dt);
+        // THE JOINER'S LEAK: the host loop ages and retires its effects, this seat did not, so
+        // every exhaust puff, smoke wisp, ring and spark this machine added stayed on screen
+        // for ever (the smoke that never went away) and the list grew every frame (the lag).
+        for (int i = effects.size() - 1; i >= 0; i--) {
+            Effect e = effects.get(i);
+            e.update(dt);
+            if (e.done()) effects.remove(i);
+        }
         for (int i = bullets.size() - 1; i >= 0; i--) { // flight and expiry only; combat waits for the swarm
             Bullet b = bullets.get(i);
             b.update(this, dt);
@@ -359,15 +355,28 @@ public class World {
         for (Checkpoint c : checkpoints) collectCheckpoint(c);
     }
 
+    /** A mirrored hull between packets: it coasts on its last velocity and turns toward the
+     *  facing its pilot last reported, so the other pilot's nose is visible and moves smoothly. */
+    private static void glideHull(Ship h, float dt) {
+        h.x += h.vx * dt;
+        h.y += h.vy * dt;
+        if (!Float.isNaN(h.faceGoal))
+            h.facing += wrapAngle(h.faceGoal - h.facing) * (1f - (float) Math.exp(-18f * dt));
+    }
+
     /** Ghost render objects glide toward their last snapshot truth (10 Hz set, 60 Hz flow). */
     private void ghostGlide(float dt) {
-        float k = 1f - (float) Math.exp(-12f * dt);
+        float k = 1f - (float) Math.exp(-20f * dt);
         for (int i = enemies.size() - 1; i >= 0; i--) {
             Enemy g = enemies.get(i);
             if (!g.ghost) continue;
             if (g.gone) {
                 enemies.remove(i);
             } else {
+                if (clock - g.gAt < 0.25f) { // coast on the last truth until the next arrives
+                    g.gx += g.gvx * dt;
+                    g.gy += g.gvy * dt;
+                }
                 g.x += (g.gx - g.x) * k;
                 g.y += (g.gy - g.y) * k;
             }
@@ -385,6 +394,12 @@ public class World {
         for (Enemy e : enemies) {
             if (e.ghost && e.netId == id) {
                 e.gone = false;
+                float span = clock - e.gAt; // snapshot to snapshot: the foe's real velocity
+                if (span > 0.03f && span < 0.5f) {
+                    e.gvx += ((x - e.gx) / span - e.gvx) * 0.6f;
+                    e.gvy += ((y - e.gy) / span - e.gvy) * 0.6f;
+                }
+                e.gAt = clock;
                 e.gx = x;
                 e.gy = y;
                 e.seen = true;
@@ -404,6 +419,7 @@ public class World {
         e.dispHp = e.hp;
         e.gx = x;
         e.gy = y;
+        e.gAt = clock;
         e.seen = true;
         enemies.add(e);
         if (e.boss && boss == null) boss = e; // the warden shows on the guest's bar too

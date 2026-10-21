@@ -39,6 +39,7 @@ public class Ship {
 
     public float x, y;
     public float vx, vy;
+    public float faceGoal = Float.NaN; // a mirrored hull: the heading its pilot last reported
     public float facing = (float) (Math.PI / 2); // radians, PI/2 = north (up) — the rest heading
     public float hp;
     public float boostEnergy = 100;

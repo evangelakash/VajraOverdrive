@@ -233,7 +233,10 @@ public class LobbyScreen implements FlowState {
         vajra.net.Nat.Result d = Net.door;
         if (doorNote != null && !doorNote.isEmpty())
             return d != null && d.reachable()
-                    ? ("OPEN THE DOOR: " + doorNote) + (n.isEmpty() ? "" : "  ·  " + n)
+                    // the shared code is the PUBLIC address, which a friend on this Wi-Fi often
+                    // cannot reach through the router: print the address that always works there
+                    ? "SAME WI-FI: " + Net.room + "@" + LanBeacon.lanAddress() + ":" + UdpTransport.PORT
+                            + "  ·  " + doorNote + (n.isEmpty() ? "" : "  ·  " + n)
                     : doorNote + "  ·  PRESS R FOR THE GAME'S OWN RELAY" + (n.isEmpty() ? "" : "  ·  " + n);
         return n; // no door note: the start-block reason rides this line alone
     }

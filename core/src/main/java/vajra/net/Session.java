@@ -34,6 +34,9 @@ public final class Session {
     public static final int MAX = 4;          // roster cap: four pilots, four seat colours
     public static final int HEARTBEAT = 2000; // roster broadcast / ping period, ms
     public static final int TIMEOUT = 6000;   // silence that loses a pilot, ms
+    /** A knocking client re-sends HELLO this often. Wi-Fi drops datagrams in bursts, and the
+     *  2 s heartbeat alone left a knock only two or three tries inside the join window. */
+    static final int KNOCK_RETRY = 400;
 
     private final Transport net;
     private final String myName;
@@ -45,6 +48,7 @@ public final class Session {
     private State state;
     private long seed;
     private long nextBeat;
+    private long nextKnock;             // the next HELLO retry while JOINING
     private long joinedAt = -1;          // a JOINING knocker gives up if no WELCOME ever lands
     private long rosterStamp;           // the host's clock stamp that rode the last roster out
     private long[] myStamps = {-1, -1, -1, -1}; // the guest's last sent ping stamps (echo ring)
@@ -99,6 +103,10 @@ public final class Session {
             beat(now);
         }
         if (state == State.JOINING) {
+            if (now >= nextKnock) {
+                nextKnock = now + KNOCK_RETRY;
+                sayHello(); // a host re-welcomes a repeat knock from the same address
+            }
             if (joinedAt < 0) joinedAt = now;
             if (now - joinedAt > 20000) { // ten unanswered HELLOs
                 state = State.LOST;
@@ -161,6 +169,11 @@ public final class Session {
     private void route(byte[] packet, SocketAddress from, long now) {
         if (packet.length < 2) return;
         int t = packet[0] & 0xFF;
+        if (isHost() && t >= 1 && t <= 7) { // any traffic from a seated pilot proves they are there
+            int who = packet[1] & 0xFF;
+            SocketAddress seat = addrOf.get(who);
+            if (seat != null && seat.equals(from)) lastSeen.put(who, now);
+        }
         if (t == 1) { // voice: [1][senderId][payload]
             if (packet.length > 2 && connected()) {
                 if (isHost()) relayVoice(packet, from);

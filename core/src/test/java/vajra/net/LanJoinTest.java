@@ -122,7 +122,9 @@ class LanJoinTest {
             while (host.count() > 0 && System.currentTimeMillis() < readyUntil) {
                 host.update();
                 client.update();
-                if (host.ready() && client.ready()) break;
+                // the hub's own roster must show the guest ready, not just the guest's flag
+                if (host.ready() && client.ready() && host.count() > 1
+                        && host.member(1).ready) break;
                 Thread.sleep(10);
             }
             host.start();

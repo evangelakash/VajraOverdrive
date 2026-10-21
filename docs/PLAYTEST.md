@@ -69,15 +69,15 @@ and run `bin/lwjgl3` from Terminal. (macOS will also ask once whether to allow
 
 Both machines on the same Wi-Fi / Ethernet. **A** hosts, **B** joins.
 
-1. **A launches the game**, home screen → `MULTIPLAYER` → **DIRECT CONNECT**.
+1. **A launches the game**, home screen → `MULTIPLAYER` → **HOST A RUN**.
 2. **A allows the firewall prompt** (Windows asks for java the first time; Mac asks
    once as above). The lobby's message line shows the invite:
    `CODE ABCD@192.168.x.x:26000 · SHARE IT`. Under it, a second line reports what the
    door opener found (`UPnP PORT OPENED ON THE ROUTER`, `NO PUBLIC ADDRESS — …`, …).
-3. **B launches the game** → `MULTIPLAYER` → **ON THIS NETWORK**. **The rooms on the
+3. **B launches the game** → `MULTIPLAYER` → **FIND A RUN**. **The rooms on the
    network are listed** — A's room appears with A's name and the four letters. B picks it
    with the arrow keys and **ENTER**. *Nothing is typed, no address is read off a screen.*
-   (B can also use **TYPE A LINK** and paste the code instead.)
+   (B can also use the link field in **FIND A RUN** and paste the code instead.)
 4. **Both lobbies now show the same roster**, one diamond each, and a PING column that
    fills in within a couple of seconds.
    *(A failure here is a status line: `NO ROOM FOUND — CHECK THE CODE AND THE HOST` is
@@ -121,7 +121,7 @@ list; try the router's main band or a hotspot).
 
 **Try the direct door first.** A hosts, B joins from anywhere:
 
-1. **A**: `MULTIPLAYER` → **DIRECT CONNECT**. The door opener works in the background (a few
+1. **A**: `MULTIPLAYER` → **HOST A RUN**. The door opener works in the background (a few
    seconds). The lobby's second line says what it found:
    - `UPnP PORT OPENED ON THE ROUTER` or `NAT-PMP PORT OPENED ON THE ROUTER` — the door
      is open and the link carries A's **public** address: `CODE ABCD@203.0.113.9:26000`.
@@ -129,7 +129,7 @@ list; try the router's main band or a hotspot).
    - `NO PUBLIC ADDRESS — A RELAY IS NEEDED` — A is behind a double NAT or the router
      refuses every mapping. A presses **R** in the lobby: the game starts the bundled
      relay on A's own machine, opens its port, and the link becomes the relay's address.
-2. **B**: `MULTIPLAYER` → **TYPE A LINK** → type the link (or pick the room from **ON THIS
+2. **B**: `MULTIPLAYER` → the link field in **FIND A RUN** → type the link (or pick the room from **ON THIS
    NETWORK** if B happens to be on A's LAN). B knocks directly on the public address; if
    nobody answers, B looks the room up on B's own network by its four letters and knocks
    there instead — so the same link works either way.

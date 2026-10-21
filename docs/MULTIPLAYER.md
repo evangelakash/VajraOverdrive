@@ -143,6 +143,21 @@ no separate SERVER LINK row any more.
   leaves by the right one. This is the most common reason a LAN discovery "does not work"
   on a modern Windows machine.
 
+### The beacon's LAN fixes (v1.0.1)
+
+- **Per-interface sockets now exist.** `new DatagramSocket()` is born bound, so the later `bind()`
+  always threw and every host quietly fell back to one wildcard socket. They are now created with
+  `new DatagramSocket(null)` and bound to the interface address.
+- **The real broadcast address.** `InterfaceAddress` (Java 6+) gives each interface's own
+  broadcast and prefix; the range guess is only a fallback, so /23, /22 and /16 Wi-Fi work.
+- **One room, many addresses.** A host with Wi-Fi + VPN + Docker is listed once; the joiner knocks
+  on addresses it shares a segment with first, then each remaining one, before the relay.
+- **Knock retries every 400 ms** (was the 2 s heartbeat) inside a 3.5 s window.
+- **Game traffic keeps a pilot alive.** Any packet from a seated address refreshes the host's
+  silence timer, not only `PING`.
+- **The lobby prints a `SAME WI-FI:` link** beside the door note, because the shared link is the
+  public address, which a friend on the same router often cannot reach.
+
 ---
 
 ## 5. Voice — `vajra/voice/`

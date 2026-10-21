@@ -39,6 +39,8 @@ public class NetScreen implements FlowState {
      *  bands run the full working width so a click anywhere on a row is on the row. */
     private static final float LIST_Y = 400, LIST_PITCH = 30;
     private static final String BACK_ROW = "BACK";
+    /** How long one knock waits for a WELCOME before the next address (or the relay) is tried. */
+    private static final long KNOCK_MS = 3500;
     /** The one field to paste the host's line — drawn as a real box, every frame. */
     private static final float FIELD_Y = 505, FIELD_HALF_W = 310, FIELD_H = 34;
     /** Where the field's words sit. Drawn text hangs BELOW the y it is given (measured at
@@ -70,11 +72,16 @@ public class NetScreen implements FlowState {
         final String room;
         final InetSocketAddress addr;
         final long deadline;
-        Pending(Session session, String room, InetSocketAddress addr, long deadline) {
+        /** Every address already knocked on for this room, so a retry never repeats one. */
+        final java.util.Set<InetSocketAddress> tried;
+        Pending(Session session, String room, InetSocketAddress addr, long deadline,
+                java.util.Set<InetSocketAddress> tried) {
             this.session = session;
             this.room = room;
             this.addr = addr;
             this.deadline = deadline;
+            this.tried = tried;
+            tried.add(addr);
         }
     }
 
@@ -106,18 +113,22 @@ public class NetScreen implements FlowState {
             if (System.currentTimeMillis() > pending.deadline) { // nobody answered the knock
                 String room = pending.room;
                 InetSocketAddress addr = pending.addr;
+                java.util.Set<InetSocketAddress> pendingTried = pending.tried;
                 pending.session.close();
                 pending = null;
                 // THE ROOM MAY BE RIGHT HERE: the link a host shares is its public address,
                 // which a pilot on the host's own network may not be able to reach. The
                 // room shouts its LAN address on the wire — look it up by its four
                 // letters and knock there. One link, either kind of network.
-                LanBeacon.Found near = Net.ear == null ? null : Net.ear.room(room);
-                if (near != null && !near.addr.equals(addr)) {
-                    status = "FOUND THE ROOM ON THIS NETWORK";
-                    knock(room, near.addr);
-                    return;
-                }
+                // a host on several networks shouts from several addresses: try each once
+                java.util.Set<InetSocketAddress> tried = pendingTried;
+                if (Net.ear != null)
+                    for (LanBeacon.Found near : Net.ear.candidates(room))
+                        if (!tried.contains(near.addr)) {
+                            status = "FOUND THE ROOM ON THIS NETWORK";
+                            knock(room, near.addr, tried);
+                            return;
+                        }
                 startRelay(room, addr); // the second door: the relay at the same address
                 return;
             }
@@ -302,13 +313,13 @@ public class NetScreen implements FlowState {
         String name = vajra.profile.Profiles.active().name;
         String room = roomCode();
         Transport net;
+        stopEar(); // a LAN ear still holding this machine's port would make the bind fail
         try {
             net = new UdpTransport(UdpTransport.PORT);
         } catch (Exception e) {
             status = "PORT " + UdpTransport.PORT + " BUSY — QUIT THE OTHER LOBBY";
             return;
         }
-        stopEar(); // this machine's own port is about to be the game's
         Net.session = Session.host(net, name);
         Net.room = room;
         try {
@@ -473,6 +484,10 @@ public class NetScreen implements FlowState {
      *  room code asks the wire first (the LAN shouts live rooms); a relay-door invite
      *  (its port is not the game's) goes to the relay at once — no game answers there. */
     private void knock(String room, InetSocketAddress addr) {
+        knock(room, addr, new java.util.HashSet<>());
+    }
+
+    private void knock(String room, InetSocketAddress addr, java.util.Set<InetSocketAddress> tried) {
         if (addr == null) {
             LanBeacon.Found near = Net.ear == null ? null : Net.ear.room(room);
             if (near != null) {
@@ -498,7 +513,7 @@ public class NetScreen implements FlowState {
         try {
             Transport net = new UdpTransport(0); // an ephemeral client port
             Session s = Session.join(net, vajra.profile.Profiles.active().name, addr);
-            pending = new Pending(s, room, addr, System.currentTimeMillis() + 2500);
+            pending = new Pending(s, room, addr, System.currentTimeMillis() + KNOCK_MS, tried);
             status = "KNOCKING ON " + addr + "…";
         } catch (Exception e) {
             startRelay(room, addr);

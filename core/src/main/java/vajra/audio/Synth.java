@@ -8,12 +8,12 @@ package vajra.audio;
  *  the high ones dying first). Layered and timed, those make a coin's two pings, a shell's thump,
  *  a missile's rising rush, the gong when the hangar opens.
  *
- *  <p>It is deterministic (the noise is a seeded generator), mono, 22 050 Hz, 16-bit, so the same
+ *  <p>It is deterministic (the noise is a seeded generator), mono, 44 100 Hz, 16-bit, so the same
  *  sound is the same bytes every run, and a test can check every one of them: audible, never
  *  clipped, the right length, the loop seamless. Pure maths with no GL and no sound card, so it
  *  runs headless. */
 public final class Synth {
-    public static final int RATE = 22050;
+    public static final int RATE = 44100;
 
     private Synth() { }
 
@@ -121,32 +121,38 @@ public final class Synth {
                 return o;
             }
 
-            // ---- the guns ---------------------------------------------------------------------
-            case SHOT_BOLT: {
-                float[] o = buf(0.16f);
-                tone(o, 0, 0.14f, W.SQUARE, 1100, 260, 0.5f, 0.001f, 28, 0, 0);
-                tone(o, 0, 0.10f, W.SAW, 2200, 600, 0.2f, 0.001f, 45, 0, 0);
-                noise(o, 0, 0.01f, 0.3f, 0.0005f, 150, 4, 'h', 4000, 4000);
+            // ---- the guns: a real firearm's report, in its parts -------------------------------
+            case SHOT_MAGNUM: { // .44 Magnum: a hard crack, a deep boom, a long slap off the walls
+                float[] o = gun(0.22f, 0.55f, 1.7f, 2000, 1.0f, 2200, 250, 22, 1.05f, 120, 45, 12, 0.30f, 2.2f,
+                        new float[] { 38, 83, 141, 214 }, new float[] { 0.40f, 0.27f, 0.18f, 0.11f }, 100);
+                tone(o, 0.005f, 0.14f, W.SINE, 540, 515, 0.035f, 0.001f, 26, 0, 0); // the barrel rings, a hint of it
                 return o;
             }
-            case SHOT_MG: {
-                float[] o = buf(0.06f);
-                noise(o, 0, 0.04f, 0.8f, 0.001f, 80, 5, 'b', 1800, 1200);
-                tone(o, 0, 0.035f, W.TRI, 1400, 900, 0.4f, 0.001f, 90, 0, 0);
+            case SHOT_RIFLE: { // 5.56: sharper, a tighter body, a shorter tail
+                return gun(0.10f, 0.28f, 1.2f, 2800, 0.7f, 3000, 400, 38, 0.55f, 150, 70, 22, 0.20f, 1.8f,
+                        new float[] { 30, 66, 118 }, new float[] { 0.30f, 0.20f, 0.12f }, 200);
+            }
+            case SHOT_MG: { // a submachine gun: a snap and a pop, nearly dry, so it can rattle at 14 a second
+                return gun(0.05f, 0.09f, 1.0f, 3200, 0.55f, 3500, 700, 70, 0.30f, 200, 110, 45, 0.10f, 1.5f,
+                        new float[] { 22, 48 }, new float[] { 0.18f, 0.10f }, 300);
+            }
+            case SHOT_SHELL: { // a .50 / cannon: a chest-deep boom and a rumble that rolls away
+                float[] o = gun(0.34f, 0.75f, 2.1f, 1700, 1.0f, 1500, 150, 11, 1.2f, 90, 30, 7, 0.30f, 2.6f,
+                        new float[] { 55, 118, 190, 290 }, new float[] { 0.40f, 0.30f, 0.20f, 0.12f }, 400);
+                tone(o, 0, 0.5f, W.SAW, 55, 32, 0.22f, 0.002f, 6, 0, 0); // the rumble under it
                 return o;
             }
-            case SHOT_SHELL: {
-                float[] o = buf(0.34f);
-                tone(o, 0, 0.3f, W.SINE, 160, 48, 1f, 0.002f, 14, 0, 0);
-                noise(o, 0, 0.24f, 0.8f, 0.002f, 16, 6, 'l', 900, 200);
-                tone(o, 0, 0.2f, W.SAW, 300, 80, 0.25f, 0.002f, 20, 0, 0);
+            case SHOT_SCATTER: { // a 12-gauge: a wide, ragged blast, then the pump racked
+                float[] o = gun(0.20f, 0.50f, 1.4f, 1500, 1.1f, 3500, 300, 14, 0.95f, 110, 50, 10, 0.30f, 2.2f,
+                        new float[] { 40, 90, 150 }, new float[] { 0.36f, 0.25f, 0.15f }, 500);
+                rack(o, 0.36f);
+                rack(o, 0.45f);
                 return o;
             }
-            case SHOT_SCATTER: {
-                float[] o = buf(0.26f);
-                noise(o, 0, 0.2f, 0.9f, 0.002f, 20, 7, 'b', 2800, 1200);
-                tone(o, 0, 0.2f, W.SINE, 140, 70, 0.6f, 0.002f, 22, 0, 0);
-                noise(o, 0, 0.015f, 0.4f, 0.0005f, 100, 8, 'h', 3500, 3500);
+            case SHOT_SNIPER: { // a high-velocity rifle: a whip-crack, a thin boom, a long slap-back
+                float[] o = gun(0.12f, 0.80f, 1.4f, 3500, 0.6f, 2500, 300, 30, 0.6f, 130, 60, 14, 0.22f, 2.0f,
+                        new float[] { 120, 260, 420 }, new float[] { 0.36f, 0.26f, 0.15f }, 600);
+                tone(o, 0, 0.006f, W.SQUARE, 4200, 1800, 0.45f, 0.0002f, 600, 0, 0); // the supersonic snap
                 return o;
             }
             case SHOT_LASER: {
@@ -156,18 +162,21 @@ public final class Synth {
                 noise(o, 0, 0.05f, 0.25f, 0.002f, 40, 9, 'h', 3000, 3000);
                 return o;
             }
-            case SHOT_MISSILE: {
-                float[] o = buf(0.55f);
-                noise(o, 0, 0.5f, 0.9f, 0.08f, 6, 10, 'b', 350, 2200);
-                tone(o, 0, 0.45f, W.SINE, 180, 420, 0.25f, 0.06f, 7, 0, 0);
-                noise(o, 0, 0.012f, 0.3f, 0.0005f, 100, 11, 'h', 3500, 3500);
+            case SHOT_MISSILE: { // a rocket: the igniter's thump, then a roaring, hissing climb
+                float[] o = buf(1.0f);
+                tone(o, 0, 0.18f, W.SINE, 110, 55, 0.9f, 0.002f, 14, 0, 0);
+                noise(o, 0.02f, 0.95f, 0.8f, 0.14f, 3.2f, 10, 'b', 500, 3000);
+                noise(o, 0.02f, 0.9f, 0.5f, 0.10f, 3.5f, 11, 'l', 420, 280);
+                noise(o, 0.03f, 0.8f, 0.28f, 0.12f, 3.6f, 12, 'h', 3500, 3500);
+                for (int i = 0; i < 6; i++) noise(o, 0.1f + i * 0.11f, 0.012f, 0.25f, 0.0005f, 150, 13 + i, 'h', 3000, 3000);
                 return o;
             }
-            case SHOT_BOMB: {
-                float[] o = buf(0.4f);
-                tone(o, 0, 0.36f, W.SINE, 120, 40, 1f, 0.003f, 10, 0, 0);
-                tone(o, 0, 0.3f, W.TRI, 240, 90, 0.4f, 0.003f, 12, 0, 0);
-                noise(o, 0, 0.14f, 0.5f, 0.003f, 25, 12, 'l', 500, 500);
+            case SHOT_BOMB: { // a grenade launcher: the hollow thunk of the tube, a click, a puff of air
+                float[] o = buf(0.5f);
+                tone(o, 0, 0.14f, W.SINE, 200, 70, 1f, 0.001f, 24, 0, 0);
+                noise(o, 0, 0.13f, 0.7f, 0.001f, 28, 14, 'b', 350, 300);
+                noise(o, 0, 0.006f, 0.5f, 0.0002f, 400, 15, 'h', 3500, 3500);
+                noise(o, 0.01f, 0.28f, 0.28f, 0.01f, 11, 16, 'l', 420, 150);
                 return o;
             }
             case SHOT_CHARGED: {
@@ -177,18 +186,24 @@ public final class Synth {
                 noise(o, 0, 0.03f, 0.3f, 0.001f, 60, 13, 'h', 4000, 4000);
                 return o;
             }
-            case ENEMY_SHOT: {
-                float[] o = buf(0.14f);
-                tone(o, 0, 0.12f, W.TRI, 520, 240, 0.6f, 0.002f, 25, 0, 0);
-                tone(o, 0, 0.10f, W.SQUARE, 260, 130, 0.15f, 0.002f, 30, 0, 0);
-                return o;
+            case ENEMY_SHOT: { // a small pistol across the room: a pop and a short echo
+                return gun(0.07f, 0.22f, 0.9f, 2600, 0.5f, 2800, 500, 55, 0.35f, 220, 110, 32, 0.14f, 1.6f,
+                        new float[] { 26, 58 }, new float[] { 0.25f, 0.15f }, 700);
             }
 
             // ---- the fight --------------------------------------------------------------------
-            case HIT_ENEMY: {
-                float[] o = buf(0.07f);
-                noise(o, 0, 0.045f, 0.8f, 0.001f, 70, 14, 'b', 2500, 1500);
-                tone(o, 0, 0.05f, W.SINE, 760, 520, 0.5f, 0.001f, 60, 0, 0);
+            case HIT_ENEMY: { // a round into a body or armour: a thud and a metallic tick
+                float[] o = buf(0.12f);
+                noise(o, 0, 0.05f, 0.8f, 0.0005f, 60, 14, 'b', 1400, 700);
+                tone(o, 0, 0.08f, W.SINE, 320, 120, 0.7f, 0.0005f, 38, 0, 0);
+                tone(o, 0, 0.05f, W.SINE, 2600, 2300, 0.25f, 0.0003f, 70, 0, 0);
+                return o;
+            }
+            case IMPACT: { // a round on rock: a dry tick and the whine of the ricochet
+                float[] o = buf(0.2f);
+                noise(o, 0, 0.04f, 0.8f, 0.0003f, 70, 18, 'b', 3000, 1800);
+                noise(o, 0, 0.03f, 0.5f, 0.0005f, 90, 19, 'l', 700, 300);
+                tone(o, 0.005f, 0.16f, W.SINE, 2900, 1400, 0.3f, 0.002f, 24, 0, 0);
                 return o;
             }
             case EXPLODE_S: {
@@ -428,6 +443,72 @@ public final class Synth {
             default:
                 return buf(0.1f);
         }
+    }
+
+    // =============================================================== the gunshot
+    /** A firearm's report, built the way a real one sounds. Four parts, then the room:
+     *
+     *  <ol>
+     *   <li><b>The crack</b>: a razor of broadband noise a few milliseconds long, the shock of the
+     *       bullet and the gas. It is what makes a shot sound like a shot and not a tone.</li>
+     *   <li><b>The blast</b>: a loud low-passed burst, bright at first and darkening as it dies:
+     *       the muzzle flash expanding.</li>
+     *   <li><b>The boom</b>: a low swept sine you feel in the chest, with a thin octave above it.</li>
+     *   <li><b>The tail</b>: a long, soft, darkening noise: the report filling the space.</li>
+     *  </ol>
+     *
+     *  <p>The whole is driven through a saturator (a real shot overloads a microphone and an ear),
+     *  then given its room: delayed, darkened copies of itself, the slap off the walls. Calibre
+     *  is only a matter of the numbers: a Magnum is a deep boom and a long room; a rifle is nearly
+     *  all crack; a submachine gun is a crack and a pop with almost no room, so it can rattle.
+     *
+     *  @param dry the length of the blast and boom; @param tail the length of the room's tail */
+    private static float[] gun(float dry, float tail, float crack, float crackHz, float blast, float b0, float b1,
+                               float bDecay, float boom, float h0, float h1, float hDecay, float tailAmp,
+                               float drive, float[] echoMs, float[] echoGain, int seed) {
+        float echoMax = echoMs.length == 0 ? 0f : echoMs[echoMs.length - 1] / 1000f;
+        float[] o = buf(dry + tail + echoMax);
+        // the crack is the loudest thing in the first millisecond: that is what separates a gunshot
+        // from a tone. Two layers of high-passed noise, the second brighter and shorter.
+        noise(o, 0, 0.012f, crack * 3.2f, 0.00005f, 380, seed, 'h', crackHz, crackHz);
+        noise(o, 0, 0.006f, crack * 2.4f, 0.00005f, 650, seed + 1, 'h', crackHz * 1.7f, crackHz * 1.7f);
+        noise(o, 0, 0.003f, crack * 1.6f, 0.00003f, 1200, seed + 4, 'h', 6500, 6500);
+        noise(o, 0, dry, blast, 0.0004f, bDecay, seed + 2, 'l', b0, b1);
+        // the boom is pressure, not a pitch: a low-passed burst of noise, with only a short, quiet
+        // sine beneath it. A long clean sine here is the sound of a kick drum, not a gun.
+        noise(o, 0, dry, boom * 1.1f, 0.0006f, hDecay * 1.3f, seed + 5, 'l', h0 * 1.8f, h1 * 1.6f);
+        tone(o, 0, dry * 0.4f, W.SINE, h0, h1, boom * 0.26f, 0.0008f, hDecay * 2.6f, 0, 0);
+        tone(o, 0, dry * 0.3f, W.TRI, h0 * 1.6f, h1 * 1.4f, boom * 0.10f, 0.0008f, hDecay * 3f, 0, 0);
+        noise(o, dry * 0.35f, tail, tailAmp, 0.012f, 6.5f / Math.max(0.05f, tail), seed + 3, 'l', 900, 160);
+        float d = drive * 0.55f; // enough to thicken the body, not enough to flatten the crack
+        float norm = (float) Math.tanh(d);
+        for (int i = 0; i < o.length; i++) o[i] = (float) Math.tanh(d * o[i]) / norm;
+        float[] soft = new float[echoGain.length]; // the room answers the shot, it never outshouts it
+        for (int i = 0; i < soft.length; i++) soft[i] = echoGain[i] * 0.55f;
+        echoes(o, echoMs, soft);
+        return o;
+    }
+
+    /** The room: darkened, delayed copies of the sound, added back. A wall takes the highs. */
+    private static void echoes(float[] o, float[] ms, float[] gain) {
+        float[] lp = new float[o.length];
+        float a = 1f - (float) Math.exp(-2 * Math.PI * 1500 / RATE);
+        float y = 0f;
+        for (int i = 0; i < o.length; i++) {
+            y += a * (o[i] - y);
+            lp[i] = y;
+        }
+        for (int t = 0; t < ms.length; t++) {
+            int d = (int) (ms[t] / 1000f * RATE);
+            for (int i = d; i < o.length; i++) o[i] += lp[i - d] * gain[t];
+        }
+    }
+
+    /** A pump-action shotgun's rack: the slide back, the slide forward, two dry metal clacks. */
+    private static void rack(float[] o, float t0) {
+        noise(o, t0, 0.025f, 0.5f, 0.0005f, 90, 80, 'b', 1800, 1500);
+        tone(o, t0, 0.018f, W.SQUARE, 640, 480, 0.16f, 0.0003f, 120, 0, 0);
+        noise(o, t0 + 0.035f, 0.02f, 0.4f, 0.0005f, 110, 81, 'b', 2600, 2200);
     }
 
     // =============================================================== the engine's loop

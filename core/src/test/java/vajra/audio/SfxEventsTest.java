@@ -72,9 +72,10 @@ class SfxEventsTest {
     // ---- the guns -----------------------------------------------------------------------------
     @Test
     void everyWeaponHasItsOwnKindOfReport() {
-        assertEquals(Sfx.SHOT_BOLT, Sfx.forWeapon(WeaponDef.SINGLE, 1f));
-        assertEquals(Sfx.SHOT_BOLT, Sfx.forWeapon(WeaponDef.DOUBLE, 1f));
-        assertEquals(Sfx.SHOT_BOLT, Sfx.forWeapon(WeaponDef.PIERCE, 1f));
+        assertEquals(Sfx.SHOT_MAGNUM, Sfx.forWeapon(WeaponDef.SINGLE, 1f));
+        assertEquals(Sfx.SHOT_MAGNUM, Sfx.forWeapon(WeaponDef.DOUBLE, 1f));
+        assertEquals(Sfx.SHOT_SNIPER, Sfx.forWeapon(WeaponDef.PIERCE, 1f));
+        assertEquals(Sfx.SHOT_RIFLE, Sfx.forWeapon(WeaponDef.BURST1, 1f));
         assertEquals(Sfx.SHOT_MG, Sfx.forWeapon(WeaponDef.LIGHT, 1f));
         assertEquals(Sfx.SHOT_SHELL, Sfx.forWeapon(WeaponDef.HEAVY, 1f));
         assertEquals(Sfx.SHOT_SCATTER, Sfx.forWeapon(WeaponDef.SPREAD, 1f));
@@ -261,6 +262,28 @@ class SfxEventsTest {
         assertTrue(rec.heard(Sfx.DOCK));
     }
 
+    @Test
+    void aRoundThatStrikesRockWhinesAway() {
+        World w = world();
+        float rx = -1;
+        final float ry = 3000f; // inside Atala: Bhu Loka is open sky
+        for (float x = 64; x < w.width - 64 && rx < 0; x += 16) if (w.blockedPx(x, ry)) rx = x;
+        assertTrue(rx > 0, "the test world has rock at this height");
+        w.ship.x = rx;
+        w.ship.y = ry;
+        vajra.weapon.Bullet b = w.obtainBullet();
+        b.init(rx, ry, 0f, WeaponDef.SINGLE, 1f, 1f, false);
+        b.update(w, 0.001f);
+        assertTrue(rec.heard(Sfx.IMPACT), "your round on rock has its own sound");
+
+        Rec foes = new Rec();
+        Audio.use(foes);
+        vajra.weapon.Bullet h = w.obtainBullet();
+        h.init(rx, ry, 0f, WeaponDef.SINGLE, 1f, 1f, true);
+        h.update(w, 0.001f);
+        assertFalse(foes.heard(Sfx.IMPACT), "a foe's round on rock stays quiet, there are too many of them");
+    }
+
     // ---- the engine and the warning -----------------------------------------------------------
     @Test
     void theEngineRisesWithPushSpeedAndBoost() {
@@ -306,9 +329,9 @@ class SfxEventsTest {
 
     @Test
     void aSoundCannotMachineGunItself() {
-        assertFalse(SfxPlayer.gapOpen(10, Sfx.SHOT_BOLT.minGapMs));
-        assertTrue(SfxPlayer.gapOpen(Sfx.SHOT_BOLT.minGapMs, Sfx.SHOT_BOLT.minGapMs));
-        assertTrue(SfxPlayer.wander(Sfx.SHOT_BOLT) > 0, "shots vary a little");
+        assertFalse(SfxPlayer.gapOpen(10, Sfx.SHOT_MAGNUM.minGapMs));
+        assertTrue(SfxPlayer.gapOpen(Sfx.SHOT_MAGNUM.minGapMs, Sfx.SHOT_MAGNUM.minGapMs));
+        assertTrue(SfxPlayer.wander(Sfx.SHOT_MAGNUM) > 0, "shots vary a little");
         assertEquals(0f, SfxPlayer.wander(Sfx.UI_SELECT), 0f, "an instrument does not");
         for (Sfx s : Sfx.values()) assertTrue(s.minGapMs >= 0 && s.gain > 0 && s.gain <= 1f, s.name());
     }

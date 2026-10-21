@@ -20,19 +20,22 @@ public enum Sfx {
     SHOP_CLOSE(0.55f, 400),      // and shuts
     DOCK(0.50f, 600),            // the bay locks the hull
 
-    // ---- the guns -------------------------------------------------------------------------
-    SHOT_BOLT(0.42f, 55),        // the plain bolts: single, double, burst, aim, piercer, wallbore
-    SHOT_MG(0.30f, 55),          // the light machine gun
-    SHOT_SHELL(0.60f, 90),       // the heavy shell
-    SHOT_SCATTER(0.55f, 90),     // buckshot
-    SHOT_LASER(0.45f, 90),       // the beam
-    SHOT_MISSILE(0.50f, 100),    // a missile leaves the rail
-    SHOT_BOMB(0.60f, 140),       // the bomb is dropped
-    SHOT_CHARGED(0.62f, 140),    // a held charge lets go
-    ENEMY_SHOT(0.26f, 70),       // a foe fires
+    // ---- the guns: each is a real firearm's report, by what the weapon is ----------------
+    SHOT_MAGNUM(0.90f, 60),      // single, double, aim: a .44 Magnum revolver
+    SHOT_RIFLE(0.75f, 50),       // burst and twin burst: a 5.56 rifle on three-round burst
+    SHOT_MG(0.55f, 40),          // the light MG: a submachine gun, near-dry so it can rattle
+    SHOT_SHELL(0.95f, 100),      // the heavy shell: a .50 / cannon, deep, long rumble
+    SHOT_SCATTER(0.90f, 100),    // buckshot: a 12-gauge, and the pump racked after
+    SHOT_SNIPER(0.85f, 80),      // piercer and wallbore: a high-velocity rifle
+    SHOT_LASER(0.45f, 90),       // the beam (an energy weapon: no firearm to copy)
+    SHOT_MISSILE(0.70f, 100),    // a rocket leaves the rail
+    SHOT_BOMB(0.80f, 140),       // the grenade launcher's thunk
+    SHOT_CHARGED(0.62f, 140),    // a held charge lets go (energy)
+    ENEMY_SHOT(0.34f, 70),       // a foe fires: a small pistol
 
     // ---- the fight ------------------------------------------------------------------------
-    HIT_ENEMY(0.30f, 45),        // a round lands on a foe
+    HIT_ENEMY(0.38f, 45),        // a round lands on a foe
+    IMPACT(0.34f, 45),           // a round strikes rock and whines away
     EXPLODE_S(0.55f, 70),        // a small foe falls
     EXPLODE_M(0.65f, 90),        // a stronger one, or a bomb
     EXPLODE_L(0.75f, 120),       // a large body
@@ -81,7 +84,9 @@ public enum Sfx {
         this.minGapMs = minGapMs;
     }
 
-    /** The sound of a player's weapon firing. A held charge (power above 1) is its own report. */
+    /** The sound of a player's weapon firing, read from what the weapon IS: a beam, a charge, a
+     *  launcher, a rocket, a shotgun's spread, a heavy round, a rapid-fire gun, a high-velocity
+     *  piercing round, a burst, and otherwise the sidearm, a Magnum. */
     public static Sfx forWeapon(vajra.weapon.WeaponDef d, float power) {
         if (d.beam) return SHOT_LASER;
         if (d.chargeTime > 0 || power > 1.05f) return SHOT_CHARGED;
@@ -90,6 +95,8 @@ public enum Sfx {
         if (d.count >= 4) return SHOT_SCATTER;
         if (d.bulletSize >= 9) return SHOT_SHELL;
         if (d.cooldown <= 0.09f) return SHOT_MG;
-        return SHOT_BOLT;
+        if (d.pierceEnemies || d.pierceWalls) return SHOT_SNIPER;
+        if (d.burst > 1) return SHOT_RIFLE;
+        return SHOT_MAGNUM;
     }
 }

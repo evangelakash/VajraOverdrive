@@ -61,7 +61,10 @@ public class Bullet {
         }
         if (w.blockedPx(x, y)) {
             // enemy fire is stopped by rock too: cover works both ways
-            if (hostile || !pierceWalls) expire(w);
+            if (hostile || !pierceWalls) {
+                if (!hostile) w.sound(Sfx.IMPACT, x, y); // your round strikes rock and whines away
+                expire(w);
+            }
         }
     }
 

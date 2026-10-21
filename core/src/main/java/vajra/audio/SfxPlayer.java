@@ -96,9 +96,10 @@ public final class SfxPlayer implements SfxBus {
     /** How much a sound's pitch may wander either side, as a fraction. */
     static float wander(Sfx s) {
         switch (s) {
-            case SHOT_BOLT: case SHOT_MG: case SHOT_SHELL: case SHOT_SCATTER: case SHOT_MISSILE:
-            case ENEMY_SHOT: case HIT_ENEMY: case EXPLODE_S: case EXPLODE_M: case HULL_HIT: case DROP:
-                return 0.07f;
+            case SHOT_MAGNUM: case SHOT_RIFLE: case SHOT_MG: case SHOT_SHELL: case SHOT_SCATTER: case SHOT_SNIPER:
+            case SHOT_MISSILE: case ENEMY_SHOT: case HIT_ENEMY: case IMPACT: case EXPLODE_S: case EXPLODE_M:
+            case HULL_HIT: case DROP:
+                return s == Sfx.SHOT_MAGNUM || s == Sfx.SHOT_SHELL || s == Sfx.SHOT_SNIPER ? 0.03f : 0.05f;
             default:
                 return 0f;
         }

@@ -1,0 +1,149 @@
+plugins {
+    id 'java'
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+/** The friend's installer: everything needed to drop the game on another PC/Mac.
+ *  `makeSetup` builds the hand-carried zip; `installer` builds the real Windows
+ *  setup EXE with the IExpress tool that ships with Windows itself. Both share
+ *  the same install.bat: it copies app/, checks for Java, offers shortcuts with
+ *  the mk1 ship icon, and can pin the relay address (relay.txt). */
+/* The game may carry its own Java runtime: tools/jre/win holds a jlink-built
+ * Windows image, tools/jre/mac-arm and mac-x64 hold Mac images. When present the
+ * payloads bundle them (the installer then needs no Java on the machine at all);
+ * when absent everything still installs and simply asks for Java 17 as before. */
+def jreWin = file('tools/jre/win').isDirectory() ? file('tools/jre/win') : null
+def jreMacArm = file('tools/jre/mac-arm').isDirectory() ? file('tools/jre/mac-arm') : null
+def jreMacX64 = file('tools/jre/mac-x64').isDirectory() ? file('tools/jre/mac-x64') : null
+
+/** The build stamp riding every payload as app/gamever.txt: the in-game UPDATE
+ *  compares it with the setup exe it just downloaded (the wizard answers
+ *  --version) and skips the install when both say the same build. */
+tasks.register('gamever') {
+    def out = layout.buildDirectory.file('gamever.txt')
+    doLast {
+        def f = out.get().asFile
+        f.parentFile.mkdirs()
+        f.text = java.time.LocalDateTime.now().format(
+                java.time.format.DateTimeFormatter.ofPattern('yyyy-MM-dd HH:mm'))
+    }
+}
+
+tasks.register('makeSetup', Zip) {
+    dependsOn ':lwjgl3:installDist', ':relay:installDist', 'gamever'
+    archiveFileName = 'VajraOverdrive-setup.zip'
+    destinationDirectory = layout.buildDirectory.dir('setup')
+    from 'tools/setup'
+    from(project(':lwjgl3').tasks.named('installDist')) { into 'app' }
+    from('tools/setup/vajra.ico') { into 'app' }
+    from('tools/setup/play.bat') { into 'app' } // the launcher that prefers the bundled JRE
+    from('tools/setup/vajra.txt') { into 'app' } // the note on flying with a friend
+    from(layout.buildDirectory.file('gamever.txt')) { into 'app' }
+    if (jreWin) from(jreWin) { into 'app/jre' }
+    from(project(':relay').tasks.named('installDist')) { into 'relay' }
+}
+
+tasks.register('payloadZip', Zip) { // the game files, compressed for the exe's body
+    dependsOn ':lwjgl3:installDist', ':relay:installDist', 'gamever'
+    archiveFileName = '_setup.zip'
+    destinationDirectory = layout.buildDirectory.dir('installer')
+    from(project(':lwjgl3').tasks.named('installDist')) { into 'app' }
+    from('tools/setup/vajra.ico') { into 'app' }
+    from('tools/setup/play.bat') { into 'app' }
+    from('tools/setup/vajra.txt') { into 'app' } // the note on flying with a friend
+    from(layout.buildDirectory.file('gamever.txt')) { into 'app' }
+    from('tools/setup/run-relay.bat')
+    from('tools/setup/host-server.bat')
+    from('tools/setup/host-server.ps1')
+    from(project(':relay').tasks.named('installDist')) { into 'relay' }
+    if (jreWin) from(jreWin) { into 'app/jre' }
+}
+
+/* The Mac's own installer: `gradlew macDmg` stages the game + the mk1 ship png
+ * and runs tools/setup/make-mac-dmg.sh, which only macOS can run (hdiutil,
+ * sips, iconutil are built in). Output: build/macstage/VajraOverdrive.dmg —
+ * the friend opens it and drags the app onto Applications. */
+tasks.register('macDmg') {
+    dependsOn ':lwjgl3:installDist', ':relay:installDist', 'gamever'
+    doLast {
+        if (!System.getProperty('os.name').contains('Mac'))
+            throw new GradleException('a Mac DMG must be built on a Mac - put this repo on one (or unzip build/setup/VajraOverdrive-setup.zip there) and run: sh tools/setup/make-mac-dmg.sh')
+        def stage = layout.buildDirectory.dir('macstage').get().asFile
+        stage.mkdirs()
+        copy {
+            from(project(':lwjgl3').tasks.named('installDist')) { into 'app' }
+            from 'tools/setup/make-mac-dmg.sh'
+            from 'tools/setup/ship128.png'
+            from(layout.buildDirectory.file('gamever.txt')) { into 'app' }
+            if (jreMacArm) from(jreMacArm) { into 'app/jre-mac-arm' }
+            if (jreMacX64) from(jreMacX64) { into 'app/jre-mac-x64' }
+            // the relay rides along: a Mac host must be able to serve a room without
+            // anything else being installed
+            from(project(':relay').tasks.named('installDist')) { into 'app/relay' }
+            from('tools/setup/vajra.txt') { into 'app' } // the note on flying with a friend
+            into stage
+        }
+        def b = new ProcessBuilder('sh', 'make-mac-dmg.sh')
+        b.directory(stage)
+        b.inheritIO()
+        def p = b.start()
+        if (p.waitFor() != 0) throw new GradleException('the DMG build failed - see the log above')
+    }
+}
+
+tasks.register('installer') {
+    dependsOn 'payloadZip'
+    doLast {
+        def out = layout.buildDirectory.dir('installer').get().asFile
+        out.mkdirs()
+        def csc = ["C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe",
+                   "C:/Windows/Microsoft.NET/Framework/v4.0.30319/csc.exe"]
+            .collect { new File(it) }.find { it.exists() }
+        if (csc == null) throw new GradleException('the in-box C# compiler was not found')
+        // ZipFile lives in an assembly outside the default reference set; find it in the GAC
+        def gacFile = { String id ->
+            def found = []
+            new File("C:/Windows/Microsoft.NET/assembly/GAC_MSIL/${id}").eachFileRecurse(
+                groovy.io.FileType.FILES) { if (it.name == "${id}.dll") found << it }
+            if (found.isEmpty()) throw new GradleException("${id} not in the GAC")
+            found.first().absolutePath
+        }
+        def spawn = { List cmd, File cwd ->
+            def b = new ProcessBuilder(cmd.collect { it.toString() } as String[])
+            b.directory(cwd)
+            b.inheritIO()
+            def p = b.start()
+            def code = p.waitFor()
+            if (code != 0) throw new GradleException(code + " from " + cmd[0])
+        }
+        def zip = tasks.named('payloadZip').get().archiveFile.get().asFile.absolutePath
+        def exe = new File(out, 'VajraOverdrive-setup.exe')
+        def root = projectDir.absolutePath
+        spawn([csc, '/nologo', '/target:winexe', '/out:' + exe.absolutePath,
+               '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll',
+               '/r:' + gacFile('System.IO.Compression.FileSystem'),
+               '/win32icon:' + root + '\\tools\\setup\\vajra.ico', // the mk1 ship as the file's icon
+               '/res:' + zip + ',payload', // the game rides inside the exe
+               '/res:' + root + '\\tools\\setup\\vajra.ico,vajra',
+               '/res:' + root + '\\tools\\setup\\ship128.png,ship',
+               file('tools/setup/SetupWizard.cs').absolutePath], out)
+        if (!exe.exists() || exe.length() < 100000) throw new GradleException('the wizard exe did not build')
+        spawn(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+               file('tools/setup/sign.ps1').absolutePath, '-Exe', exe.absolutePath], out)
+    }
+}

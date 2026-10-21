@@ -1,0 +1,198 @@
+package vajra.desktop;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
+import com.badlogic.gdx.utils.BufferUtils;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.imageio.ImageIO;
+import org.junit.jupiter.api.Test;
+import vajra.ship.Hangar;
+import vajra.screen.Hud;
+import vajra.screen.Ui;
+import vajra.world.Score;
+import vajra.world.World;
+
+/** The bottom-right shard readout, rendered for real: the gem, the count, the charge track and
+ *  the forge bar all land inside the frame, and the block stays clear of the depth tape. PNGs
+ *  land in build/ for eyeballing. */
+class ShardGaugeScreenshotTest {
+    private static final int W = 1280, H = 720;
+    /** 2 spare segments x 3 rows x 3 cols - the denominator spareCentre() reports against. */
+    private static final int SPARE_SAMPLES = 2 * 3 * 3;
+
+    @Test
+    void theShardBlockRendersWhereItShould() {
+        List<String> failures = new ArrayList<>();
+        AtomicReference<Throwable> boom = new AtomicReference<>();
+
+        Lwjgl3ApplicationConfiguration cfg = new Lwjgl3ApplicationConfiguration();
+        cfg.setWindowedMode(W, H);
+        cfg.setInitialVisible(false);
+        cfg.disableAudio(true);
+        new Lwjgl3Application(new ApplicationAdapter() {
+            Ui ui;
+            SpriteBatch batch;
+            Hud hud;
+            FrameBuffer fbo;
+
+            @Override
+            public void create() {
+                try {
+                    ui = new Ui();
+                    batch = new SpriteBatch();
+                    hud = new Hud(ui);
+                    fbo = new FrameBuffer(Pixmap.Format.RGBA8888, W, H, false);
+
+                    // empty: Atala pays Akasha, so one row, nothing in it
+                    World empty = scene();
+                    int[] a = shot(empty);
+                    writePng(a, "build/shard-0-empty.png");
+                    checkBlock(a, "empty block", failures);
+
+                    // held: three whole segments and 60% of the fourth - the charge track mid-fill
+                    World held = scene();
+                    for (int i = 0; i < 3; i++) held.hangar.addShard(Hangar.AKASHA, 0);
+                    int[] b = shot(held);
+                    writePng(b, "build/shard-1-held.png");
+                    checkBlock(b, "held block", failures);
+                    // unforged: the four spare segments are open frames, so their centres are
+                    // still the background
+                    check(spareCentre(b) < SPARE_SAMPLES / 4,
+                            "before forging the spare segments are HOLLOW sockets ("
+                                    + spareCentre(b) + " lit px in their centres)", failures);
+
+                    // forged with a release in hand: the gold hairline goes up around the gem
+                    World forged = scene();
+                    for (int i = 0; i < Hangar.FORGE_COST; i++)
+                        forged.hangar.addShard(Hangar.AKASHA, 0);
+                    int[] c = shot(forged);
+                    writePng(c, "build/shard-2-forged.png");
+                    checkBlock(c, "forged block", failures);
+                    // forged: the same segments are filled cells, so the centres are lit
+                    check(spareCentre(c) > SPARE_SAMPLES * 3 / 5,
+                            "once forged the same segments are SOLID cells ("
+                                    + spareCentre(c) + " lit px in their centres)", failures);
+
+                    fbo.dispose();
+                    hud.dispose();
+                    ui.dispose();
+                    batch.dispose();
+                } catch (Throwable t) {
+                    boom.set(t);
+                } finally {
+                    Gdx.app.exit();
+                }
+            }
+
+            World scene() {
+                World w = new World();
+                w.ship.y = 4100; // Maya Vana - past the grand gate, so the tape is up
+                w.ship.hp = w.ship.maxHp();
+                w.lives = 3;
+                w.score.points = 123456;
+                w.score.combo = 7;
+                w.score.comboT = Score.WINDOW;
+                return w;
+            }
+
+            int[] shot(World w) {
+                fbo.begin();
+                Gdx.gl.glClearColor(13 / 255f, 13 / 255f, 26 / 255f, 1f);
+                Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+                hud.render(batch, w, null, null);
+                IntBuffer buf = BufferUtils.newIntBuffer(W * H);
+                Gdx.gl.glReadPixels(0, 0, W, H, GL20.GL_RGBA, GL20.GL_UNSIGNED_BYTE, buf);
+                fbo.end();
+                int[] px = new int[W * H];
+                buf.get(px);
+                return px;
+            }
+
+            /** Something must actually be drawn in the block's box, and it must stay clear of the
+             *  depth tape. The block grows UP from the bottom margin, so it occupies
+             *  y MARGIN .. MARGIN + height - not the top of the screen. */
+            void checkBlock(int[] px, String what, List<String> f) {
+                int y0 = (int) vajra.screen.ShardGauge.MARGIN;
+                int y1 = y0 + (int) vajra.screen.ShardGauge.height(1);
+                int x0 = (int) (Ui.UI_W - vajra.screen.ShardGauge.MARGIN
+                        - vajra.screen.ShardGauge.ROW_W);
+                int x1 = (int) (Ui.UI_W - vajra.screen.ShardGauge.MARGIN);
+                int lit = 0;
+                for (int y = y0; y <= y1; y++)
+                    for (int x = x0; x <= x1; x++) {
+                        int p = px[y * W + x];
+                        if (Math.abs(r(p) - 13) > 6 || Math.abs(g(p) - 13) > 6
+                                || Math.abs(b(p) - 26) > 6) lit++;
+                    }
+                if (lit < 100) f.add(what + ": nothing drawn in the block (" + lit + " px)");
+
+                // and it must not collide with the depth tape, which owns the right wall
+                int tapeBottom = 120; // Hud's column: y 120..600
+                if (y1 > tapeBottom)
+                    f.add(what + ": the block tops out at y" + y1 + ", into the tape at y"
+                            + tapeBottom);
+            }
+
+            /** Lit pixels in the CENTRE of the two spare segments of Atala's one row. The
+             *  hollow-vs-solid distinction lives entirely in that centre: a socket is a 1 px
+             *  frame with background inside it, a cell is filled. Counting the whole segment
+             *  cannot tell them apart - both have lit edges. */
+            int spareCentre(int[] px) {
+                // geometry comes from the gauge itself, never recomputed here
+                int segY = (int) vajra.screen.ShardGauge.segY(vajra.screen.ShardGauge.MARGIN);
+                int n = 0;
+                // segments 3 and 4 are the unfilled ones in the "held" scene
+                for (int seg = 3; seg < 5; seg++) {
+                    int cx = (int) (vajra.screen.ShardGauge.segLeft(seg)
+                            + vajra.screen.ShardGauge.SEG_W / 2);
+                    for (int y = segY + 2; y <= segY + vajra.screen.ShardGauge.SEG_H - 3; y++)
+                        for (int x = cx - 1; x <= cx + 1; x++) {
+                            int p = px[y * W + x];
+                            if (Math.abs(r(p) - 13) > 10 || Math.abs(g(p) - 13) > 10
+                                    || Math.abs(b(p) - 26) > 10) n++;
+                        }
+                }
+                return n;
+            }
+
+            static void check(boolean ok, String what, List<String> f) {
+                if (!ok) f.add(what);
+            }
+
+            static int r(int p) { return p & 0xff; }
+            static int g(int p) { return (p >> 8) & 0xff; }
+            static int b(int p) { return (p >> 16) & 0xff; }
+
+            void writePng(int[] px, String path) {
+                try {
+                    BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);
+                    for (int y = 0; y < H; y++)
+                        for (int x = 0; x < W; x++) {
+                            int p = px[y * W + x];
+                            img.setRGB(x, H - 1 - y, (r(p) << 16) | (g(p) << 8) | b(p));
+                        }
+                    File out = new File(path);
+                    out.getParentFile().mkdirs();
+                    ImageIO.write(img, "png", out);
+                } catch (Exception e) { /* a missing PNG is not a failure */ }
+            }
+        }, cfg);
+
+        if (boom.get() != null) throw new AssertionError("shard gauge render crashed", boom.get());
+        assertTrue(failures.isEmpty(), () -> "shard gauge checks failed:\n  "
+                + String.join("\n  ", failures));
+    }
+}

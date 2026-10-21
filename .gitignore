@@ -1,0 +1,23 @@
+# build outputs
+.gradle/
+build/
+**/build/
+bin/
+*.class
+
+# editor / OS noise
+*.log
+Thumbs.db
+Desktop.ini
+.idea/
+*.iml
+
+# local pilot data the game regenerates
+profiles.json
+*.save
+
+# bundled runtimes (jlink-built, ~50MB each) - rebuild from a Temurin 17 JDK
+tools/jre/
+
+# generated docs (rebuild with tools\collect-multiplayer.bat)
+code_notes/

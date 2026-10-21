@@ -1,0 +1,44 @@
+VAJRA OVERDRIVE - a short note for the pilot
+============================================
+
+Flying with a friend, on the same Wi-Fi
+---------------------------------------
+  1. YOU:   MULTIPLAYER -> HOST A RUN
+  2. YOU:   the lobby shows a code like   ABCD@192.168.1.9:26000
+  3. THEM:  MULTIPLAYER -> JOIN A RUN
+            Your room is already listed under your name - they pick it
+            with the arrow keys and press ENTER. Nothing is typed and
+            no address is read off a screen.
+  4. BOTH:  READY, then the host presses START.
+
+Flying with a friend, anywhere on the internet
+----------------------------------------------
+  1. YOU:   MULTIPLAYER -> HOST A RUN
+  2. YOU:   wait a few seconds. The game asks YOUR OWN ROUTER to open
+            the door (UPnP) - no port forwarding, nothing to install,
+            no third-party service. The line under the code says what
+            it found.
+  3. YOU:   send them the code -   ABCD@203.0.113.9:26000
+  4. THEM:  MULTIPLAYER -> JOIN A RUN, type the code, ENTER.
+            They knock on your machine directly. If nobody answers the
+            knock the game tries the relay at the same address, so the
+            friend never has to know which door you opened.
+  5. If your router refused every mapping, the game starts its own
+     relay instead and the code changes to the relay's address - send
+     the new one.
+
+Talking
+-------
+  Hold V to talk, release to stop. A lit diamond beside a name means
+  that pilot is speaking. No microphone means you can listen only.
+
+When the door will not open
+---------------------------
+  Windows asks once whether java may use the network - answer ALLOW.
+  A router that refuses every mapping still leaves the LAN path
+  working, and the game's RELAY SERVER row is there for the rest.
+
+One more thing
+--------------
+  A run owns nothing on exit. Coins, hulls and tiers are built inside
+  a run and die with it; only your best score is kept.

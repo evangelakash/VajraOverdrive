@@ -1,0 +1,25 @@
+plugins {
+    id 'application'
+}
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+    testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+application {
+    mainClass = 'vajra.desktop.DesktopLauncher'
+    // macOS GLFW needs the main thread; on Windows that option kills the JVM
+    applicationDefaultJvmArgs = System.getProperty("os.name").contains("Mac")
+        ? ["-XstartOnFirstThread"] : []
+}
+
+sourceSets.main.resources.srcDirs = ["../assets"]

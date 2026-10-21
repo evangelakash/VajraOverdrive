@@ -122,15 +122,13 @@ public final class Synth {
             }
 
             // ---- the guns: a real firearm's report, in its parts -------------------------------
-            case SHOT_MAGNUM: { // .44 Magnum: a hard crack, a deep boom, a long slap off the walls
-                float[] o = gun(0.22f, 0.55f, 1.7f, 2000, 1.0f, 2200, 250, 22, 1.05f, 120, 45, 12, 0.30f, 2.2f,
-                        new float[] { 38, 83, 141, 214 }, new float[] { 0.40f, 0.27f, 0.18f, 0.11f }, 100);
-                tone(o, 0.005f, 0.14f, W.SINE, 540, 515, 0.035f, 0.001f, 26, 0, 0); // the barrel rings, a hint of it
-                return o;
+            case SHOT_MAGNUM: { // Glock 17, 9 mm: a flat, snapping "pak", a little body, almost no tail
+                return gun(0.07f, 0.20f, 1.5f, 2400, 1.0f, 3200, 500, 48, 0.55f, 190, 95, 32, 0.12f, 2.0f,
+                        new float[] { 60, 120 }, new float[] { 0.22f, 0.14f }, 100);
             }
-            case SHOT_RIFLE: { // 5.56: sharper, a tighter body, a shorter tail
-                return gun(0.10f, 0.28f, 1.2f, 2800, 0.7f, 3000, 400, 38, 0.55f, 150, 70, 22, 0.20f, 1.8f,
-                        new float[] { 30, 66, 118 }, new float[] { 0.30f, 0.20f, 0.12f }, 200);
+            case SHOT_RIFLE: { // AR-15, 5.56: a violent crack, a hard chest slap, an outdoor roll-off
+                return gun(0.12f, 0.40f, 2.0f, 2200, 1.0f, 3800, 420, 30, 0.85f, 170, 70, 20, 0.22f, 2.0f,
+                        new float[] { 90, 180, 280 }, new float[] { 0.22f, 0.16f, 0.10f }, 200);
             }
             case SHOT_MG: { // a submachine gun: a snap and a pop, nearly dry, so it can rattle at 14 a second
                 return gun(0.05f, 0.09f, 1.0f, 3200, 0.55f, 3500, 700, 70, 0.30f, 200, 110, 45, 0.10f, 1.5f,
@@ -152,7 +150,6 @@ public final class Synth {
             case SHOT_SNIPER: { // a high-velocity rifle: a whip-crack, a thin boom, a long slap-back
                 float[] o = gun(0.12f, 0.80f, 1.4f, 3500, 0.6f, 2500, 300, 30, 0.6f, 130, 60, 14, 0.22f, 2.0f,
                         new float[] { 120, 260, 420 }, new float[] { 0.36f, 0.26f, 0.15f }, 600);
-                tone(o, 0, 0.006f, W.SQUARE, 4200, 1800, 0.45f, 0.0002f, 600, 0, 0); // the supersonic snap
                 return o;
             }
             case SHOT_LASER: {
@@ -483,13 +480,38 @@ public final class Synth {
         float d = drive * 0.55f; // enough to thicken the body, not enough to flatten the crack
         float norm = (float) Math.tanh(d);
         for (int i = 0; i < o.length; i++) o[i] = (float) Math.tanh(d * o[i]) / norm;
-        float[] soft = new float[echoGain.length]; // the room answers the shot, it never outshouts it
-        for (int i = 0; i < soft.length; i++) soft[i] = echoGain[i] * 0.55f;
-        echoes(o, echoMs, soft);
+        float wet = 0f; // the room answers the shot, it never outshouts it
+        for (float g : echoGain) wet += g;
+        room(o, echoMax, wet * 0.5f, seed + 9);
         return o;
     }
 
-    /** The room: darkened, delayed copies of the sound, added back. A wall takes the highs. */
+    /** A diffuse room: many faint, scattered reflections thinning out over `rt` seconds, darkened as
+     *  they go. A few evenly spaced slaps ring like a struck steel plate; a dense random wash does
+     *  not, which is what a real room (or a field) sounds like behind a shot. */
+    private static void room(float[] o, float rt, float wet, int seed) {
+        if (rt <= 0f || wet <= 0f) return;
+        float[] dry = o.clone();
+        Rng r = new Rng(seed * 104729 + 7);
+        int taps = 260;
+        for (int k = 0; k < taps; k++) {
+            float u = (r.next() + 1f) * 0.5f;
+            float t = 0.004f + rt * u * u; // denser early, thinning late
+            int d = (int) (t * RATE);
+            float g = wet * (r.next() < 0 ? -1f : 1f) * (0.4f + 0.6f * (r.next() + 1f) * 0.5f)
+                    * (float) Math.exp(-4.6f * t / rt) * 0.22f;
+            for (int i = d; i < o.length; i++) o[i] += dry[i - d] * g;
+        }
+        // the wall takes the highs: pull the added wash (not the shot) down with a one-pole
+        float a = 1f - (float) Math.exp(-2 * Math.PI * 3000 / RATE), y = 0f;
+        for (int i = 0; i < o.length; i++) {
+            float wetPart = o[i] - dry[i];
+            y += a * (wetPart - y);
+            o[i] = dry[i] + y;
+        }
+    }
+
+    /** (unused now) The room as a few darkened, delayed copies of the sound, added back. A wall takes the highs. */
     private static void echoes(float[] o, float[] ms, float[] gain) {
         float[] lp = new float[o.length];
         float a = 1f - (float) Math.exp(-2 * Math.PI * 1500 / RATE);

@@ -21,7 +21,7 @@ public enum Sfx {
     DOCK(0.50f, 600),            // the bay locks the hull
 
     // ---- the guns: each is a real firearm's report, by what the weapon is ----------------
-    SHOT_MAGNUM(0.90f, 60),      // single, double, aim: a .44 Magnum revolver
+    SHOT_MAGNUM(0.90f, 60),      // single, double, aim: a Glock 17 (9 mm)
     SHOT_RIFLE(0.75f, 50),       // burst and twin burst: a 5.56 rifle on three-round burst
     SHOT_MG(0.55f, 40),          // the light MG: a submachine gun, near-dry so it can rattle
     SHOT_SHELL(0.95f, 100),      // the heavy shell: a .50 / cannon, deep, long rumble
@@ -86,7 +86,7 @@ public enum Sfx {
 
     /** The sound of a player's weapon firing, read from what the weapon IS: a beam, a charge, a
      *  launcher, a rocket, a shotgun's spread, a heavy round, a rapid-fire gun, a high-velocity
-     *  piercing round, a burst, and otherwise the sidearm, a Magnum. */
+     *  piercing round, a burst, and otherwise the sidearm, a Glock. */
     public static Sfx forWeapon(vajra.weapon.WeaponDef d, float power) {
         if (d.beam) return SHOT_LASER;
         if (d.chargeTime > 0 || power > 1.05f) return SHOT_CHARGED;

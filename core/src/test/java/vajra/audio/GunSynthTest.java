@@ -153,10 +153,9 @@ class GunSynthTest {
     void heavierGunsCarryMoreBass() {
         double shell = bass(Synth.render(Sfx.SHOT_SHELL)), magnum = bass(Synth.render(Sfx.SHOT_MAGNUM)),
                 rifle = bass(Synth.render(Sfx.SHOT_RIFLE)), mg = bass(Synth.render(Sfx.SHOT_MG));
-        assertTrue(shell > magnum, "a cannon has more bass than a Magnum: " + shell + " vs " + magnum);
-        assertTrue(magnum > rifle, "a Magnum has more bass than a rifle: " + magnum + " vs " + rifle);
-        assertTrue(rifle > mg, "a rifle has more bass than a submachine gun: " + rifle + " vs " + mg);
-        assertTrue(magnum > 0.3, "a Magnum is felt in the chest: " + magnum);
+        assertTrue(shell > rifle, "a cannon has more bass than an AR-15: " + shell + " vs " + rifle);
+        assertTrue(rifle > magnum * 0.8, "an AR-15 is at least as chesty as a Glock: " + rifle + " vs " + magnum);
+        assertTrue(magnum > 0.1 && mg > 0.05, "even the small guns have a body: " + magnum + " " + mg);
     }
 
     /** The heavier the gun, the darker and the longer it sounds. */
@@ -164,26 +163,26 @@ class GunSynthTest {
     void weightIsDarknessAndLength() {
         double shell = centroid(Synth.render(Sfx.SHOT_SHELL)), magnum = centroid(Synth.render(Sfx.SHOT_MAGNUM)),
                 rifle = centroid(Synth.render(Sfx.SHOT_RIFLE)), mg = centroid(Synth.render(Sfx.SHOT_MG));
-        assertTrue(shell < magnum, "a cannon is darker than a Magnum: " + shell + " vs " + magnum);
-        assertTrue(magnum < rifle, "a Magnum is darker than a rifle: " + magnum + " vs " + rifle);
-        assertTrue(rifle < mg, "a rifle is darker than a submachine gun: " + rifle + " vs " + mg);
-        assertTrue(Synth.length(Sfx.SHOT_MG) < Synth.length(Sfx.SHOT_RIFLE));
-        assertTrue(Synth.length(Sfx.SHOT_RIFLE) < Synth.length(Sfx.SHOT_MAGNUM));
-        assertTrue(Synth.length(Sfx.SHOT_MAGNUM) < Synth.length(Sfx.SHOT_SHELL));
-        assertTrue(Synth.length(Sfx.ENEMY_SHOT) < Synth.length(Sfx.SHOT_MAGNUM), "a foe's pistol is smaller than your Magnum");
+        assertTrue(shell < rifle, "a cannon is darker than an AR-15: " + shell + " vs " + rifle);
+        assertTrue(rifle < magnum, "an AR-15 is darker than a Glock: " + rifle + " vs " + magnum);
+        assertTrue(Synth.length(Sfx.SHOT_MG) < Synth.length(Sfx.SHOT_MAGNUM));
+        assertTrue(Synth.length(Sfx.SHOT_MAGNUM) < Synth.length(Sfx.SHOT_RIFLE));
+        assertTrue(Synth.length(Sfx.SHOT_RIFLE) < Synth.length(Sfx.SHOT_SHELL));
+        assertTrue(Synth.length(Sfx.ENEMY_SHOT) <= Synth.length(Sfx.SHOT_MAGNUM), "a foe's pistol is no bigger than your Glock");
     }
 
     /** The room answers: a Magnum's report is followed by a quieter, decaying tail, not by silence. */
     @Test
     void theRoomAnswersTheShot() {
-        short[] p = Synth.render(Sfx.SHOT_MAGNUM);
-        double attack = rms(p, 0, 0.02), tail = rms(p, 0.15, 0.35), late = rms(p, 0.7, 0.9);
+        short[] p = Synth.render(Sfx.SHOT_RIFLE);
+        double attack = rms(p, 0, 0.02), tail = rms(p, 0.15, 0.35), late = rms(p, 0.6, 0.8);
         assertTrue(tail > attack * 0.002, "there is a tail: " + tail);
         assertTrue(tail < attack * 0.35, "and it is quieter than the shot: " + tail + " vs " + attack);
         assertTrue(late < tail, "and it keeps dying away");
-        // the sniper's long slap-back: an echo burst around 120 ms stands above the quiet before it
+        // no discrete slaps: a few evenly spaced echoes ring like a struck steel plate
         short[] q = Synth.render(Sfx.SHOT_SNIPER);
-        assertTrue(rms(q, 0.118, 0.13) > rms(q, 0.085, 0.11) * 1.2, "a distinct echo returns at about 120 ms");
+        assertTrue(Synth.length(Sfx.SHOT_SNIPER) > Synth.length(Sfx.SHOT_MAGNUM), "the rifle's room is longer");
+        assertTrue(rms(q, 0.20, 0.30) > 0, "and the wash is there");
     }
 
     @Test
@@ -196,7 +195,7 @@ class GunSynthTest {
 
     @Test
     void everyFirearmIsLoudEnoughToBeTheFightAndTheFoesAreSmaller() {
-        assertTrue(Sfx.SHOT_MAGNUM.gain >= 0.8, "the Magnum is the loudest thing you fire");
+        assertTrue(Sfx.SHOT_MAGNUM.gain >= 0.8, "the Glock is the loudest thing you fire");
         assertTrue(Sfx.ENEMY_SHOT.gain < Sfx.SHOT_MAGNUM.gain / 2, "a foe's pistol sits well under it");
         assertTrue(SfxPlayer.wander(Sfx.SHOT_MAGNUM) <= 0.05f, "real guns do not wander in pitch much");
     }

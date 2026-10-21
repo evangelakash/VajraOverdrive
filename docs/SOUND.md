@@ -27,8 +27,8 @@ sine), and a **room** that answers with echoes off the walls, all pushed through
 
 | Weapon in the game | Real-world counterpart | How it sounds |
 |---|---|---|
-| Single Bolt, Double Bolt, Aim Shot | **.44 Magnum revolver** | hard crack, deep boom, a long slap off the walls |
-| Burst, Twin Burst | 5.56 rifle on burst | almost all crack, a short tail |
+| Single Bolt, Double Bolt, Aim Shot | **Glock 17, 9 mm** | a flat, snapping pop, a little body, almost no tail |
+| Burst, Twin Burst | **AR-15, 5.56** | a violent crack, a hard chest slap, an outdoor roll-off |
 | Light MG | submachine gun | a snap and a pop, nearly dry, so it can rattle at 14 a second |
 | Buckshot | 12-gauge shotgun | wide ragged blast, then the pump racked (two clacks) |
 | Heavy Shell | .50 / cannon | the deepest boom and a long rolling tail |
@@ -38,8 +38,9 @@ sine), and a **room** that answers with echoes off the walls, all pushed through
 | Laser, Charge Shot | (energy weapons: no firearm to copy) | left synthetic |
 | foes' guns | small pistol | a pop and a short echo, quieter |
 
-Sounds are 44.1 kHz so the crack keeps its top end. The weights follow the real order: cannon
-darkest and longest, then Magnum, rifle, submachine gun.
+Sounds are 44.1 kHz so the crack keeps its top end. The room is a dense, random wash of faint reflections, not a few evenly spaced echoes: spaced
+echoes ring like a struck steel plate. The weights follow the real order: cannon darkest and
+longest, then AR-15, then Glock.
 
 **Listen to them without the game:** `java -cp core/build/classes/java/main vajra.audio.SfxExport
 <folder> SHOT_MAGNUM SHOT_RIFLE ...` writes ordinary WAV files (no names = all 50).

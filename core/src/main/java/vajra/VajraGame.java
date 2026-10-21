@@ -1,5 +1,8 @@
 package vajra;
 
+import vajra.audio.Audio;
+import vajra.audio.SfxPlayer;
+
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -23,6 +26,7 @@ public class VajraGame extends Game {
     public void create() {
         batch = new SpriteBatch();
         ui = new Ui();
+        Audio.use(new SfxPlayer()); // every sound from here on; silence if there is no device
         flow = new Flow();
         flow.ui(ui); // so it can keep the UI viewport current for states with none of their own
         flow.bind(Input.Keys.F11, this::toggleFullscreen);
@@ -51,6 +55,7 @@ public class VajraGame extends Game {
 
     @Override
     public void dispose() {
+        Audio.bus().stopLoops();
         Net.close(); // first: a quitting guest says BYE while its socket still lives
         if (flow != null) flow.dispose(); // pops (and disposes) every state on the stack
         if (ui != null) ui.dispose();

@@ -1,5 +1,8 @@
 package vajra.screen;
 
+import vajra.audio.Audio;
+import vajra.audio.Sfx;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -93,6 +96,7 @@ public class HomeScreen implements FlowState {
     }
 
     private void activate() {
+        Audio.ui(Sfx.UI_SELECT);
         int sel = menu.selected();
         if (sel == 0) flow.set(new GameScreen(batch, flow, ui));
         else if (sel == 1) flow.push(new NetScreen(flow, ui, batch));

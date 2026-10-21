@@ -1,5 +1,8 @@
 package vajra.screen;
 
+import vajra.audio.Audio;
+import vajra.audio.Sfx;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
@@ -224,6 +227,7 @@ public class NetScreen implements FlowState {
     }
 
     private void activate() {
+        Audio.ui(Sfx.UI_SELECT);
         int sel = menu.selected();
         if (sel == HOST) host();
         else if (sel == NEARBY) openJoin();
@@ -414,6 +418,7 @@ public class NetScreen implements FlowState {
     }
 
     private void choose() {
+        Audio.ui(Sfx.UI_SELECT);
         java.util.List<LanBeacon.Found> near = rows();
         if (pick < near.size()) {
             LanBeacon.Found f = near.get(pick);

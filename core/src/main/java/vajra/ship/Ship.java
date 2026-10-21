@@ -1,5 +1,7 @@
 package vajra.ship;
 
+import vajra.audio.Sfx;
+
 import vajra.weapon.Weapon;
 import vajra.world.Effect;
 import vajra.world.World;
@@ -86,9 +88,13 @@ public class Ship {
         float dipWant = (dipT > 0 || dashTime > 0 || shieldOn) ? 1f : 0f;
         dip += (dipWant - dip) * (1f - (float) Math.exp(-16f * dt));
 
+        boolean wasShield = shieldOn, wasBoost = boosting;
         shieldOn = in.shield() && shieldEnergy > 0;
+        if (shieldOn && !wasShield) w.sound(Sfx.SHIELD_ON);
         shieldEnergy += shieldOn ? -18f * dt : 10f * dt;
         shieldEnergy = Math.max(0, Math.min(shieldCap(), shieldEnergy));
+        if (wasShield && (!shieldOn || shieldEnergy <= 0))
+            w.sound(shieldEnergy <= 0 ? Sfx.SHIELD_DOWN : Sfx.SHIELD_OFF); // let go, or run dry
 
         // THE CHARGE HAS WEIGHT. While the Astra winds up the hull is heavy: thrust is cut to a
         // third and the dash is locked out. Not "you cannot move" - that reads as a bug - but
@@ -102,6 +108,7 @@ public class Ship {
         if (tx != 0 || ty != 0) thrustHold += dt;
         else thrustHold = 0;
         boosting = in.boost() && boostEnergy > 0 && (tx != 0 || ty != 0);
+        if (boosting && !wasBoost) w.sound(Sfx.BOOST);
         boostEnergy += boosting ? -BOOST_DRAIN * dt : BOOST_REGEN * dt;
         boostEnergy = Math.max(0, Math.min(100, boostEnergy));
 
@@ -122,6 +129,7 @@ public class Ship {
         boolean d = in.dash() && !winding;      // the charge owns the dash
         if (d && !prevDash && dashCd <= 0) {
             dashTime = DASH_TIME;
+            w.sound(Sfx.DASH);
             // the cooldown starts when the burst ENDS, not when it begins: the smear is not
             // dead time, it is 0.3s of free movement, and the gap after it is what you wait.
             iFrames = Math.max(iFrames, DASH_IFRAMES);
@@ -229,6 +237,7 @@ public class Ship {
             trauma = Math.min(1, trauma + 0.3f);
             dipT = DIP_TIME;
             w.addEffect(Effect.ring(x, y, 40, 0.5f, 0.8f, 1f)); // ripple across the bubble
+            w.sound(Sfx.SHIELD_HIT);
             return;
         }
         float actual = amount * (1f - def.damageReduction); // tank hulls ignore a fraction
@@ -236,12 +245,15 @@ public class Ship {
         invuln = 0.6f;
         trauma = Math.min(1, trauma + 0.6f);
         dipT = DIP_TIME;
+        if (hp > 0) w.sound(Sfx.HULL_HIT);
         if (hp <= 0) {
+            w.sound(Sfx.SHIP_DESTROYED);
             w.score.breakCombo(); // death drops the chain before anything else
             trauma = 1;
             w.lives = Math.max(0, w.lives - 1);
             if (w.lives == 0) {
                 w.gameOver = true; // all lives spent: the hull stays where it fell, the screen freezes
+                w.sound(Sfx.GAME_OVER);
                 hp = 0;
                 trauma = 0;
                 return;
@@ -253,6 +265,7 @@ public class Ship {
             vx = 0;
             vy = 0;
             invuln = 1.5f; // breathing room to fly out of whatever killed you
+            w.sound(Sfx.RESPAWN);
         }
     }
 

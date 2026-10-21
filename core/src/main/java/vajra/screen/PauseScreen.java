@@ -1,5 +1,8 @@
 package vajra.screen;
 
+import vajra.audio.Audio;
+import vajra.audio.Sfx;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.GL20;
@@ -34,6 +37,7 @@ public class PauseScreen implements FlowState {
     private final UiMenu menu;
 
     public PauseScreen(Flow flow, Ui ui, SpriteBatch batch, World world) {
+        Audio.bus().stopLoops(); // the frozen run falls silent; resuming restarts the engine
         this.flow = flow;
         this.ui = ui;
         this.batch = batch;
@@ -88,6 +92,7 @@ public class PauseScreen implements FlowState {
     }
 
     private void activate() {
+        Audio.ui(Sfx.UI_SELECT);
         int sel = menu.selected();
         if (sel == 0) flow.pop();
         else if (sel == 1) flow.push(new SettingsScreen(flow, ui, batch)); // the run stays frozen

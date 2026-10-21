@@ -1,5 +1,7 @@
 package vajra.world;
 
+import vajra.audio.Sfx;
+
 import vajra.enemy.Enemy;
 
 /** Enemy director: the boss seal, the commander's call, mid-berserk deployments and his blink
@@ -19,6 +21,7 @@ public final class EnemyDirector {
         world.boss.boss = true;
         world.boss.rank = 1;
         world.add(world.boss);
+        world.sound(Sfx.BOSS_AWAKEN);
         world.addEffect(Effect.ring(world.boss.x, world.boss.y, 340, 1f, 0.84f, 0.3f));
     }
 

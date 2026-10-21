@@ -1,5 +1,8 @@
 package vajra.flow;
 
+import vajra.audio.Audio;
+import vajra.audio.Sfx;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
@@ -37,6 +40,7 @@ public class Flow implements Screen, InputProcessor {
 
     /** Close the top state: it is finished, so exit() then dispose(), exactly once. */
     public void pop() {
+        Audio.ui(Sfx.UI_BACK); // leaving a screen
         if (stack.isEmpty()) return;
         FlowState s = stack.remove(stack.size() - 1);
         s.exit();

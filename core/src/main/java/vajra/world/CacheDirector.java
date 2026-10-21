@@ -1,5 +1,7 @@
 package vajra.world;
 
+import vajra.audio.Sfx;
+
 import vajra.enemy.Enemy;
 
 /** Hidden-cache director: touch and the local squad converges, the last fall pays out.
@@ -43,7 +45,10 @@ public final class CacheDirector {
             n++;
         }
         if (n == 0) payout(i); // nobody answers: the stash is yours the moment you touch it
-        else world.cacheState[me][i] = World.CACHE_CONTESTED;
+        else {
+            world.cacheState[me][i] = World.CACHE_CONTESTED;
+            world.sound(Sfx.CACHE_WAKE); // the cache fights back
+        }
     }
 
     public void resolve() {
@@ -64,6 +69,7 @@ public final class CacheDirector {
         world.cacheState[world.slot][i] = World.CACHE_DONE;
         world.hangar.coins += 100;
         world.lives++;
+        world.sound(Sfx.CACHE_OPEN);
         world.addEffect(Effect.ring(world.caches[i][0], world.caches[i][1], 160, 1f, 0.84f, 0.3f));
         world.addEffect(Effect.spark(world.caches[i][0], world.caches[i][1], 1f, 0.84f, 0.3f));
     }

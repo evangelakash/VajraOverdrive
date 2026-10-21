@@ -10,15 +10,17 @@ import com.badlogic.gdx.utils.Json;
 public final class Settings {
     public float shake = 1f;      // camera-shake multiplier, 0..1
     public float popupScale = 1f; // floating-text size multiplier, 0..2
+    public float sfxVolume = 0.8f; // the sound effects' master volume, 0..1
 
     public static class Data {
-        public float shake = 1, popupScale = 1;
+        public float shake = 1, popupScale = 1, sfxVolume = 0.8f;
     }
 
     public static String serialize(Settings s) {
         Data d = new Data();
         d.shake = s.shake;
         d.popupScale = s.popupScale;
+        d.sfxVolume = s.sfxVolume;
         return new Json().toJson(d);
     }
 
@@ -33,6 +35,7 @@ public final class Settings {
         if (d == null) return;
         s.shake = clamp(d.shake, 0, 1);
         s.popupScale = clamp(d.popupScale, 0, 2);
+        s.sfxVolume = clamp(d.sfxVolume, 0, 1);
     }
 
     private static float clamp(float v, float lo, float hi) {

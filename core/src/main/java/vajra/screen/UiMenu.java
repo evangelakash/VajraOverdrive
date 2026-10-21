@@ -1,5 +1,8 @@
 package vajra.screen;
 
+import vajra.audio.Audio;
+import vajra.audio.Sfx;
+
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 
@@ -35,6 +38,7 @@ public final class UiMenu {
 
     private boolean move(int delta) {
         sel = wrap(selected(), delta, count());
+        Audio.ui(Sfx.UI_MOVE);
         return true;
     }
 
@@ -54,6 +58,7 @@ public final class UiMenu {
     /** Hover moves the cursor without acting. */
     public boolean hover(Vector2 m) {
         int i = hit(m);
+        if (i >= 0 && i != sel) Audio.ui(Sfx.UI_MOVE); // only a NEW leaf ticks, not every frame over it
         if (i >= 0) sel = i;
         return i >= 0;
     }

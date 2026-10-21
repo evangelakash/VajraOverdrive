@@ -1,5 +1,8 @@
 package vajra.screen;
 
+import vajra.audio.Audio;
+import vajra.audio.Sfx;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
@@ -104,6 +107,7 @@ public class LobbyScreen implements FlowState {
     }
 
     private void activate() {
+        Audio.ui(Sfx.UI_SELECT);
         if (session == null) return;
         int sel = menu.selected();
         if (sel == 0) session.toggleReady();

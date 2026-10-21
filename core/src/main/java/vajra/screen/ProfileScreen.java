@@ -1,5 +1,8 @@
 package vajra.screen;
 
+import vajra.audio.Audio;
+import vajra.audio.Sfx;
+
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -149,6 +152,7 @@ public class ProfileScreen implements FlowState {
     }
 
     private void activate() {
+        Audio.ui(Sfx.UI_SELECT);
         int sel = menu.selected();
         if (sel == 0) Profiles.select(1);               // wrap to the next pilot on the roster
         else if (sel == 1) beginEdit();

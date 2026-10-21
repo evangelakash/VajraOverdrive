@@ -1,5 +1,7 @@
 package vajra.enemy;
 
+import vajra.audio.Sfx;
+
 import vajra.weapon.WeaponDef;
 import vajra.world.Effect;
 import vajra.world.Popups;
@@ -152,6 +154,7 @@ public class BossBrain {
 
     private static void beginPhase(Enemy e, World w, int phase) {
         e.bossPhase = phase;
+        w.sound(Sfx.BOSS_PHASE);
         e.bossInvuln = true;
         e.bossTimer = 1.5f;
         e.bossTelegraph = false;

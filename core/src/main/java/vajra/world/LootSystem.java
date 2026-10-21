@@ -1,5 +1,7 @@
 package vajra.world;
 
+import vajra.audio.Sfx;
+
 import java.util.Random;
 import vajra.enemy.Enemy;
 import vajra.ship.Hangar;
@@ -60,16 +62,19 @@ public final class LootSystem {
         p.vy = uy * d * Pickup.DRAG;
         p.phase = rng.nextFloat() * 6.2831853f;
         world.pickups.add(p);
+        world.sound(type == Pickup.COIN ? Sfx.DROP : Sfx.DROP_RARE, e.x, e.y); // a drop leaves the body
     }
 
     /** Sweep it up: coins pay the purse, shards stock the hangar, pieces complete the blade. */
     public void collect(World world, Pickup p) {
         if (p.type == Pickup.COIN) {
             world.hangar.coins++;
+            world.sound(Sfx.COIN);
             world.addEffect(Effect.ring(p.x, p.y, 12, 1f, 0.84f, 0.3f));
         } else if (p.type == Pickup.SHARD) {
             // feeds the tatva stock AND the loka's forge: only its own element pays both
             int charged = world.hangar.addShard(p.variant, world.lokaIndex);
+            world.sound(charged > 0 ? Sfx.FORGE : Sfx.SHARD);
             float[] c = World.TATVA_RGB[p.variant];
             world.addEffect(Effect.ring(p.x, p.y, 16, c[0], c[1], c[2]));
             if (charged > 0)
@@ -80,6 +85,7 @@ public final class LootSystem {
                         .color(c[0], c[1], c[2]).scale(1.25f).life(1.8f));
         } else if (p.type == Pickup.PIECE) {
             world.hangar.pieces[p.variant] = true;
+            world.sound(Sfx.PIECE);
             world.popups.push(new Popups.Spec().text("THE VAJRA ANSWERS").img("vajra")
                     .at(world.ship.x, world.ship.y + 40).color(1f, 215 / 255f, 0).scale(1.5f).life(2.4f));
             world.addEffect(Effect.ring(p.x, p.y, 40, 1f, 0.84f, 0.3f));
@@ -87,6 +93,7 @@ public final class LootSystem {
             for (boolean have : world.hangar.pieces) if (!have) return;
             world.vajraDone = true;
         } else {
+            world.sound(Sfx.HEALTH);
             world.ship.hp = Math.min(world.ship.maxHp(),
                     world.ship.hp + world.ship.maxHp() * HEALTH_HEAL);
             world.addEffect(Effect.ring(p.x, p.y, 16, 0.4f, 1f, 0.55f));

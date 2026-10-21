@@ -1,5 +1,7 @@
 package vajra.world;
 
+import vajra.audio.Sfx;
+
 import vajra.ship.Ship;
 
 /** Shop docking: enter the bay, hold, dock, then park until the hull flies out. Extracted from
@@ -31,6 +33,7 @@ public final class DockingSystem {
                     if (in) {
                         world.shopState[i] = World.DOCKING;
                         world.shopTimer[i] = 0;
+                        world.sound(Sfx.DOCK);
                     }
                     break;
                 case World.DOCKING:

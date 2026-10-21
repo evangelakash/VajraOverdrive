@@ -1,5 +1,8 @@
 package vajra.world;
 
+import vajra.audio.Sfx;
+import vajra.audio.Audio;
+
 import vajra.enemy.Brain;
 import vajra.enemy.Enemy;
 import vajra.ship.Hangar;
@@ -287,6 +290,7 @@ public class World {
     private void collectCheckpoint(Checkpoint c) {
         if (c.collected || !c.touches(ship.x, ship.y)) return;
         c.collected = true;
+        sound(Sfx.CHECKPOINT);
         respawnCp = c;
         score.add(Score.CHECKPOINT);
         popups.push(new Popups.Spec().text("ANCHORED").img("pratishtha")
@@ -549,6 +553,7 @@ public class World {
         }
         if (r == lastRegion) return;
         lastRegion = r;
+        sound(Sfx.REGION); // a gate crossed into a new band
         if (!regionScored[r]) {
             regionScored[r] = true;
             score.add(Score.REGION);
@@ -559,6 +564,17 @@ public class World {
 
     /** What a death pays: the whole purse leaves as ONE fanned burst. Called from Enemy.hurt —
      *  retires and stand-downs never pay. */
+    /** A sound in the world, heard from the ship: quieter with distance, placed left or right by
+     *  where it happened. The bus is silence in every headless test. */
+    public void sound(Sfx s, float x, float y) {
+        Audio.at(s, x, y, ship.x, ship.y);
+    }
+
+    /** A sound with no place: the ship's own voice, a pickup under the hull. */
+    public void sound(Sfx s) {
+        Audio.ui(s);
+    }
+
     public void dropLoot(Enemy e) {
         loot.drop(this, lootRng, e);
     }
@@ -807,6 +823,7 @@ public class World {
     public boolean useForge() {
         if (!forgeReady() || !hangar.spendForgeCharge(lokaIndex)) return false;
         forgeWind = FORGE_WIND;
+        sound(Sfx.ASTRA_WIND); // the charge gathers
         ship.winding = true;
         ship.trauma = Math.max(ship.trauma, 0.35f); // the hull shudders as it loads
 
@@ -836,6 +853,8 @@ public class World {
      *  cube gets its own target and goes, the hull is mended, a life comes back, and the screen
      *  is told to freeze and pull back so the moment lands. */
     private void release() {
+        sound(Sfx.ASTRA_RELEASE);
+        if (lives < MAX_LIVES) sound(Sfx.LIFE_UP); // the life that comes back
         forgeCd = FORGE_CD;
         ship.winding = false;
         ship.hp = ship.maxHp();               // the release knits the hull back together
@@ -1053,6 +1072,7 @@ public class World {
         Bullet b = bulletPool.obtain();
         b.init(x, y, angle, def, power, dmgMult, false);
         bullets.add(b);
+        sound(Sfx.forWeapon(def, power), x, y); // the report: one per volley, the player rate-limits
         addEffect(Effect.flash(x, y, x + b.vx * 0.02f, y + b.vy * 0.02f, b.r, b.g, b.b)); // muzzle flash
         if (shotWire != null) shotWire.shot(shotOf(b)); // my round, announced so both skies match
     }
@@ -1074,6 +1094,7 @@ public class World {
         Bullet b = bulletPool.obtain();
         b.init(x, y, angle, def, 1f, dmgScale, true);
         bullets.add(b);
+        sound(Sfx.ENEMY_SHOT, x, y); // a foe fires: quieter with distance, placed by where it is
         addEffect(Effect.flash(x, y, x + b.vx * 0.04f, y + b.vy * 0.04f, b.r, b.g, b.b)); // muzzle flash
         if (shotWire != null) shotWire.shot(shotOf(b)); // hostile fire streams to the guest too
     }
@@ -1166,6 +1187,8 @@ public class World {
     /** Bala falls: the retinue stands down, the ring effect goes up, the purse changes hands,
      *  and the gold gate across the north corridor opens to the next loka. */
     public void victory(Enemy b) {
+        sound(Sfx.BOSS_DEATH);
+        sound(Sfx.VICTORY); // the fanfare opens after a beat of silence of its own
         bossDead = true;
         won = true;
         victoryT = 0;
@@ -1197,6 +1220,7 @@ public class World {
 
     /** Beam: instant line from (x,y) along angle, stops at the first wall or at range, and scalds what it crosses. */
     public void laser(float x, float y, float angle, float range, float r, float g, float b, float damage) {
+        sound(Sfx.SHOT_LASER, x, y);
         float dx = (float) Math.cos(angle), dy = (float) Math.sin(angle);
         float d = wallDist(x, y, dx, dy, range);
         float ex = x + dx * d, ey = y + dy * d;

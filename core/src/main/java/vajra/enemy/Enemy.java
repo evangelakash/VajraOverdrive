@@ -1,5 +1,7 @@
 package vajra.enemy;
 
+import vajra.audio.Sfx;
+
 import vajra.weapon.WeaponDef;
 import vajra.world.Effect;
 import vajra.world.World;
@@ -241,9 +243,11 @@ public class Enemy {
         }
         if (hp > 0) {
             w.addEffect(Effect.spark(x, y, 1f, 0.9f, 0.6f));
+            w.sound(Sfx.HIT_ENEMY, x, y);
             return false;
         }
         dead = true;
+        w.sound(boss ? Sfx.EXPLODE_L : (elite || this.w >= 48) ? Sfx.EXPLODE_M : Sfx.EXPLODE_S, x, y);
         if (kind == Kind.HATAKA) betray(w); // and once more on the way down
         int prev = w.shooter;
         if (owner != 0) w.shooter = owner; // a guest's volley, resolved here: the kill is theirs

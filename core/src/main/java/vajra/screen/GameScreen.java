@@ -1,5 +1,8 @@
 package vajra.screen;
 
+import vajra.audio.Audio;
+import vajra.audio.Sfx;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.GL20;
@@ -50,6 +53,7 @@ public class GameScreen implements FlowState, ShipControls {
     private ShopUi shopUi;  // the hangar's layout: geometry, hit boxes, every label
     private ShopController shop; // purchases: what a pressed row actually does
     private boolean endSaved; // the run's end writes the save once
+    private final vajra.audio.Ambience ambience = new vajra.audio.Ambience(); // the engine and the warning
     private int accentLoka = -1; // the loka whose colour the screen line-work currently wears
     private float bootFade = 1f; // white wash in from the title launch (0.3 s)
     private final long seed;  // a multiplayer race's shared seed; 0 = the legacy world
@@ -263,6 +267,7 @@ public class GameScreen implements FlowState, ShipControls {
             endSaved = true;
         }
         updateZoom(delta);
+        ambience.update(world, delta, !shop.isOpen() && !runEnded()); // hushed in the hangar and at the end
 
         float viewW = camera.viewportWidth * zoom;
         float viewH = camera.viewportHeight * zoom;
@@ -370,6 +375,7 @@ public class GameScreen implements FlowState, ShipControls {
 
     @Override
     public void dispose() {
+        Audio.bus().stopLoops(); // the engine must not outlive its run
         if (vajra.net.Net.active()) vajra.net.Net.session.listen(null); // no planes to a dead world
         worldR.dispose();
         hud.dispose();

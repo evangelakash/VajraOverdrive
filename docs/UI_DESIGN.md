@@ -56,3 +56,24 @@ art (gameplay content) and stay as they are; the studio splash keeps its logo an
 - Menu text is `ui.menu`, `ui.body`, `ui.small`, `ui.head`, `ui.title`. `ui.hud` is the pixel HUD face.
 - Coin and gem icons in menus are `Icons.coinUi()` and `Icons.shardUi(i)`.
 - Ornament goes in the shape pass, text in the batch pass.
+
+## The in-flight HUD
+
+The HUD is the margin of the pothi: six blocks round the edge of the play, so the middle of the
+screen is the fight and nothing else. Screenshots: `docs/ui-redesign/hud-*.png`.
+
+| Block | Where | Shows |
+|---|---|---|
+| Vitals | top-left | hull, shield, energy and dash as ruler-bar meters with figures; lives as dharma wheels; the hull flown and the purse |
+| Score | top-centre | the ten-digit score; while a chain runs the slab grows a row with the chain and a meter that drains with the combo window |
+| Location + route | right edge | the loka, region and yojana reading; under it a ruler of the whole climb with the five bands (the current one lit), gates, shops, checkpoints, the ship, and a line for how far you have climbed |
+| Radar | bottom-left | the minimap dial, north up, with a bezel scale |
+| Armament console | bottom-centre | the fitted weapon (face, name, damage per second) and, beside it, one Astra cell per element this loka pays |
+| Crew | under the vitals | co-op pilots, seat colour, ping (hidden solo) |
+
+What changed in structure, not just colour: the depth tape became a route ruler that also shows
+what is ahead; the weapon plate and the shard gauge, which were stacked in the bottom-right corner,
+share one console; the loka and yojana text moved out of the middle of the right wall into a tag;
+lives became wheels. Hull turns amber under half and clay-red under a quarter (and pulses): the
+colour is the warning. `HudLayoutTest` asserts no two blocks overlap at their largest and that the
+centre stays empty.

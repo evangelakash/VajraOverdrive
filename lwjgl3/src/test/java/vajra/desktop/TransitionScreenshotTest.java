@@ -100,8 +100,8 @@ class TransitionScreenshotTest {
                     check(shipsBright(game, 616, 664, 336, 384) > 150,
                             "run frame shows the ship at the camera centre (" + shipsBright(game, 616, 664, 336, 384) + " px)",
                             failures);
-                    check(green(game) > 150,
-                            "HUD hull bar still draws after the lights pass (" + green(game) + " px)",
+                    check(hullMeter(game) > 150,
+                            "HUD hull meter still draws after the lights pass (" + hullMeter(game) + " px)",
                             failures);
 
                     // 4. ESC freezes the run under a pause card; ESC again pops straight back
@@ -114,10 +114,10 @@ class TransitionScreenshotTest {
                     // back buffer is unreliable on some drivers): title glyphs land roughly
                     // top-down 145-190, so bottom-up 530-575 after PNG readback.
                     int[] pauseTitle = readPng("build/trans-pause.png");
-                    // paused FROM a run, the line-work wears the loka's colour code: Atala pays
-                    // Akasha, the lavender of TATVA_RGB[0] — not the menu screens' brand gold
-                    check(lav(pauseTitle, 500, 800, 530, 575) > 50,
-                            "PAUSED title in the loka accent (" + lav(pauseTitle, 500, 800, 530, 575) + " px)",
+                    // the menus no longer follow the loka's accent: the pause title is the bronze every
+                    // menu heading wears (the bazaar's one heading colour)
+                    check(gold(pauseTitle, 500, 800, 530, 575) > 50,
+                            "PAUSED title in bronze (" + gold(pauseTitle, 500, 800, 530, 575) + " px)",
                             failures);
                     check(bright(pause, 400, 880, 205, 275) > 100,
                             "run-state lines under the title (" + bright(pause, 400, 880, 205, 275) + " px)",
@@ -175,13 +175,14 @@ class TransitionScreenshotTest {
         return n;
     }
 
-    /** The green hull fill of the top-left bar block. */
-    private static int green(int[] px) {
-        int n = 0;
-        for (int y = 697; y < 707; y++)
-            for (int x = 14; x < 234; x++) {
+    /** The hull meter's fill in the vitals slab: verdigris (94,178,153) while the hull is sound,
+     *  on the hull row's centre line. */
+    private static int hullMeter(int[] px) {
+        int n = 0, y0 = (int) vajra.screen.HudBars.rowY(0) - 4, y1 = y0 + 8;
+        for (int y = y0; y < y1; y++)
+            for (int x = (int) vajra.screen.HudBars.BAR_X; x < (int) (vajra.screen.HudBars.BAR_X + vajra.screen.HudBars.BAR_W); x++) {
                 int p = px[y * W + x];
-                if (Math.abs(r(p) - 34) < 40 && Math.abs(g(p) - 214) < 40 && Math.abs(b(p)) < 40) n++;
+                if (Math.abs(r(p) - 94) < 40 && Math.abs(g(p) - 178) < 40 && Math.abs(b(p) - 153) < 40) n++;
             }
         return n;
     }

@@ -27,7 +27,7 @@ import vajra.world.World;
  *  <p>Split from {@link Hud} so the HUD file only orchestrates. Two passes, like everything
  *  else: {@link #shapes} before the batch opens, {@link #label} inside it. */
 final class HudCompass {
-    static final float CX = 72, CY = 72, R = 56, W = 2f; // corner: ring clears the 14px margin
+    static final float CX = 84, CY = 84, R = 62, W = 1.6f; // corner: ring clears the 14px margin
 
     /** The x of every gate. Match World if it ever publishes one. */
     private static final float GATE_X = World.WORLD_CX; // the spine every gate hangs on
@@ -39,17 +39,17 @@ final class HudCompass {
      *  A one-and-a-half-screen half-window (768 px) at one-tile steps renders terrain
      *  near-contiguous, snapped to the world grid so rock stays put as you climb past it.
      *  POIs sit at their true offset, clamped to MAP_LIM when beyond the window. */
-    private static final float MAP_R = 55;   // rock fills the dial to the ring line
-    private static final float MAP_LIM = 52; // edge-clamped POI dots rest just inside it
+    private static final float MAP_R = 61;   // rock fills the dial to the ring line
+    private static final float MAP_LIM = 57; // edge-clamped POI dots rest just inside it
     private static final float MAP_STEP = 32, MAP_SCALE = MAP_R / 768;
     private static final int MAP_N = 24;
-    private static final float[] ROCKC = { 0.91f, 0.90f, 0.88f }; // the tiles' off-white
+    private static final float[] ROCKC = Puranic.LEAF_DARK;       // rock, in bark tones
 
     private static final int GATE = 0, SHOP = 1, CHECK = 2;
     private static final float[] NORTH = { 0.5f, 0.5f, 1f };
-    private static final float[] GOLD = HudBars.GOLD;           // the gate arches' gold
-    private static final float[] SHOPC = World.TATVA_RGB[3];    // the readout cyan (Jala)
-    private static final float[] CHECKC = { 1f, 0.45f, 0.85f }; // the collector's pink
+    private static final float[] GOLD = Puranic.BRONZE;           // the gate arches' bronze
+    private static final float[] SHOPC = Puranic.VERDIGRIS;      // shops: verdigris
+    private static final float[] CHECKC = Puranic.TERRACOTTA;     // checkpoints: fired clay
 
     private static final int RING_N = 32;
     private static final float[] RING_COS = new float[RING_N + 1], RING_SIN = new float[RING_N + 1];
@@ -73,7 +73,7 @@ final class HudCompass {
     }
 
     private float measure(String s) {
-        layout.setText(ui.caption, s);
+        layout.setText(ui.small, s);
         return layout.width;
     }
 
@@ -140,14 +140,22 @@ final class HudCompass {
 
     /** Shape pass. Always drawn — even in Bhu Loka the grand gate and north are useful. */
     void shapes(ShapeRenderer s, World w) {
+        s.setColor(Puranic.NIGHT[0], Puranic.NIGHT[1], Puranic.NIGHT[2], 0.80f); // the dial's face
+        s.circle(CX, CY, R + 3, 48);
         map(s, w); // the dial: rock to the ring line, drawn first so the marks ride it
+        // the bezel: a ring in copper and a scale of ticks outside it, a long one every 90 degrees
+        s.setColor(Puranic.COPPER[0], Puranic.COPPER[1], Puranic.COPPER[2], 0.9f);
+        for (int i = 0; i < 24; i++) {
+            float c = MathUtils.cosDeg(i * 15f), sn = MathUtils.sinDeg(i * 15f), len = i % 6 == 0 ? 7 : 3.5f;
+            s.rectLine(CX + c * (R + 3), CY + sn * (R + 3), CX + c * (R + 3 + len), CY + sn * (R + 3 + len), 1.2f);
+        }
 
-        s.setColor(1, 1, 1, 0.3f); // the ring line, over the rock
+        s.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], 0.85f); // the ring line, over the rock
         for (int i = 1; i <= RING_N; i++)
             s.rectLine(CX + RING_COS[i - 1] * R, CY + RING_SIN[i - 1] * R,
                     CX + RING_COS[i] * R, CY + RING_SIN[i] * R, W);
 
-        s.setColor(1, 1, 1, 0.55f); // cardinal ticks, over the rock
+        s.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], 0.8f); // cardinal ticks, over the rock
         for (int i = 0; i < 4; i++) {
             float c = MathUtils.cosDeg(i * 90f), sn = MathUtils.sinDeg(i * 90f);
             s.rectLine(CX + c * (R - 8), CY + sn * (R - 8), CX + c * R, CY + sn * R, W);
@@ -155,10 +163,10 @@ final class HudCompass {
 
         // you: the ship at dead centre, the nose as a faint white hand from it
         float n = noseBearingDeg(w.ship.facing);
-        s.setColor(1, 1, 1, 0.35f);
+        s.setColor(Puranic.OCHRE[0], Puranic.OCHRE[1], Puranic.OCHRE[2], 0.8f);
         s.rectLine(CX, CY, CX + MathUtils.sinDeg(n) * R, CY + MathUtils.cosDeg(n) * R, W);
-        s.setColor(1, 1, 1, 0.9f);
-        s.rectLine(CX - 2, CY, CX + 2, CY, 4);
+        s.setColor(Puranic.BONE[0], Puranic.BONE[1], Puranic.BONE[2], 1f);
+        s.circle(CX, CY, 3f, 12);
 
         // the next of each kind above, plus wherever you would come back to
         if (nearestGate(spot, w)) mark(s, w, GATE, GOLD, 1f, spot[0], spot[1], false);
@@ -228,8 +236,8 @@ final class HudCompass {
 
     /** Batch pass: "N" over the ring's top. The kinds teach themselves on the dial. */
     void label(SpriteBatch batch, World w) {
-        ui.caption.setColor(NORTH[0], NORTH[1], NORTH[2], 0.7f);
-        ui.caption.draw(batch, "N", CX - nW / 2f, CY + R + 12);
-        ui.caption.setColor(1, 1, 1, 1);
+        ui.small.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], 1f);
+        ui.small.draw(batch, "N", CX - nW / 2f, CY + R + 26);
+        ui.small.setColor(1, 1, 1, 1);
     }
 }

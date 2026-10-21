@@ -159,109 +159,109 @@ class HudScreenshotTest {
         return w;
     }
 
-    // --- checks: every sampled pixel sits on the public HudBars layout ---------------------
-    // readback rows are bottom-up, exactly like UI y-up; sample the bar midlines.
+    // --- checks: every sampled pixel sits on the public layout (HudBars, Hud) --------------
+    // readback rows are bottom-up, exactly like UI y-up. Meter fills are sampled at fractions
+    // that fall BETWEEN the tenth-ticks (0.05, 0.15 ...), where the fill or the track is clean.
 
-    private static final int HULL_Y = (int) (HudBars.TOP - HudBars.HULL_H / 2);
-    private static final int SHIELD_Y = (int) (HudBars.SHIELD_TOP - HudBars.SHIELD_H / 2);
-    private static final int BOOST_Y = (int) (HudBars.BOOST_TOP - HudBars.BOOST_H / 2);
-    private static final int MID_X = (int) (HudBars.X + HudBars.W / 2);
-    private static final int FILL_X = (int) (HudBars.X + 40);        // inside every fraction
-    private static final int H_TRACK_X = (int) (HudBars.X + 160);    // past hull 50%
-    private static final int S_TRACK_X = (int) (HudBars.X + 180);    // past shield 40%
-    private static final int B_TRACK_X = (int) (HudBars.X + 200);    // past boost 70%
-    // the score sits top-centre: ten gold digits on the top line, the combo chain under it
-    private static final int SCORE_X0 = 500, SCORE_X1 = 780;
-    private static final int SCORE_Y0 = 684, SCORE_Y1 = 712; // ui score, baseline UI_H-14
-    private static final int COMBO_Y0 = 656, COMBO_Y1 = 684; // ui.hud, baseline UI_H-42
+    private static int meterX(float frac) { return (int) (HudBars.BAR_X + HudBars.BAR_W * frac); }
+
+    private static final float[] VERDIGRIS = { 0.370f, 0.700f, 0.600f };
+    private static final float[] AMBER = { 0.930f, 0.700f, 0.300f };
+    private static final float[] ASH = { 0.600f, 0.680f, 0.740f };
+    private static final float[] OCHRE = { 0.880f, 0.620f, 0.270f };
+    private static final float[] BRONZE = { 0.860f, 0.700f, 0.460f };
+
+    private static void fill(int[] px, int x, int y, float[] c, String what, List<String> f) {
+        expectNear(px, x, y, Math.round(c[0] * 255), Math.round(c[1] * 255), Math.round(c[2] * 255), 28, what, f);
+    }
+
+    /** The unfilled part of a meter is the dark track over the test backdrop: near-black. */
+    private static void track(int[] px, int x, int y, String what, List<String> f) {
+        expectNear(px, x, y, 12, 10, 12, 16, what, f);
+    }
 
     private static void checkReady(int[] px, World w, List<String> f) {
-        // no frame: a full hull reaches the bar's right edge with fill colour, and no gold
-        // outline is left anywhere on the block
-        expectNear(px, (int) (HudBars.X + HudBars.W) - 2, HULL_Y, 34, 214, 0, 18,
-                "hull fill reaches the right edge (frameless)", f);
-        int gold = countGold(px, (int) HudBars.X, (int) (HudBars.X + HudBars.W),
-                (int) (HudBars.BOOST_TOP - HudBars.BOOST_H), (int) HudBars.TOP);
-        check(gold == 0, "outline must be gone (" + gold + " stray gold px)", f);
-        // fills: hull green (full), shield cyan (40%), boost orange (70%)
-        expectNear(px, MID_X, HULL_Y, 34, 214, 0, 18, "hull fill green", f);
-        expectNear(px, FILL_X, SHIELD_Y, 0, 226, 235, 25, "shield fill cyan at 40%", f);
-        expectNear(px, FILL_X, BOOST_Y, 243, 74, 10, 25, "boost fill orange at 70%", f);
-        // unfilled interiors are the dark track
-        expectNear(px, S_TRACK_X, SHIELD_Y, 6, 6, 12, 12, "shield track past 40%", f);
-        expectNear(px, B_TRACK_X, BOOST_Y, 6, 6, 12, 12, "boost track past 70%", f);
-        // nothing else: the top-right corner and the screen centre stay clear
-        int stray = countClear(px, 1180, 1270, 620, 715);
-        check(stray == 0, "top-right corner must stay clear (" + stray + " stray px)", f);
+        int hull = (int) HudBars.rowY(0), shield = (int) HudBars.rowY(1), energy = (int) HudBars.rowY(2),
+                dash = (int) HudBars.rowY(3);
+        // full hull reads verdigris; shield at 40% is ash up to the fraction and track beyond;
+        // energy at 70% is ochre up to it; the dash is ready (bronze, full)
+        fill(px, meterX(0.55f), hull, VERDIGRIS, "hull fill verdigris when sound", f);
+        fill(px, meterX(0.15f), shield, ASH, "shield fill ash at 40%", f);
+        track(px, meterX(0.75f), shield, "shield track past 40%", f);
+        fill(px, meterX(0.15f), energy, OCHRE, "energy fill ochre at 70%", f);
+        track(px, meterX(0.85f), energy, "energy track past 70%", f);
+        fill(px, meterX(0.55f), dash, BRONZE, "dash bronze when ready", f);
+        // three lives, as wheels on the lives row
+        int wheels = countLit(px, (int) HudBars.X + 10, (int) HudBars.X + 80,
+                (int) HudBars.LIVES_Y - 9, (int) HudBars.LIVES_Y + 9);
+        check(wheels > 60, "three life wheels under the meters (" + wheels + " px)", f);
+        // the hull flown and the purse, right-aligned on the lives row
+        int purse = countLit(px, (int) HudBars.X + 150, (int) (HudBars.X + HudBars.W - 10),
+                (int) HudBars.LIVES_Y - 8, (int) HudBars.LIVES_Y + 8);
+        check(purse > 30, "hull name and purse on the lives row (" + purse + " px)", f);
+        // the figures, right-aligned beside each meter
+        int figures = countLit(px, (int) (HudBars.X + HudBars.W - 60), (int) (HudBars.X + HudBars.W - 10),
+                (int) HudBars.rowY(2) - 7, (int) HudBars.rowY(0) + 7);
+        check(figures > 60, "the hull, shield and energy figures (" + figures + " px)", f);
+        // nothing at the screen's centre: the middle of the screen is the fight
         int centre = countClear(px, 560, 720, 320, 400);
         check(centre == 0, "screen centre must stay clear (" + centre + " stray px)", f);
-        // golden life pips under the bars, and a full gold dash pip (ready)
-        int pips = countGold(px, (int) HudBars.X,
-                (int) (HudBars.X + 2 * HudBars.LIVES_PITCH + 2 * HudBars.LIVES_R),
-                (int) (HudBars.LIVES_Y - HudBars.LIVES_R),
-                (int) (HudBars.LIVES_Y + HudBars.LIVES_R + 1));
-        check(pips > 40, "three golden life pips below the bars (" + pips + " px)", f);
-        expectNear(px, (int) (HudBars.DASH_X + HudBars.DASH_W / 2), 695,
-                255, 215, 0, 25, "dash pip gold when ready", f);
-        expectNear(px, (int) (HudBars.DASH_X + HudBars.DASH_W / 2), (int) (HudBars.TOP - 2),
-                255, 215, 0, 25, "dash pip full to the top", f);
-        // score + combo, top-centre in gold: ten digits on the top line, 7 x2 under it
-        int score = countGold(px, SCORE_X0, SCORE_X1, SCORE_Y0, SCORE_Y1);
-        check(score > 100, "gold score digits top-centre (" + score + " px)", f);
-        int combo = countGold(px, SCORE_X0, SCORE_X1, COMBO_Y0, COMBO_Y1);
-        check(combo > 20, "gold combo line under the score (" + combo + " px)", f);
-        // the yojana tape: thin white pips down the right wall's centre (countClear counts
-        // drawn pixels, so presence checks compare it directly against the box)
-        int tape = countClear(px, 1254, 1266, 264, 457);
-        check(tape > 30, "yojana pips down the right wall (" + tape + " px)", f);
-        // the indicator mid-screen beside the tape: ATALA LOKA (y 385-395), Maya Vana
-        // (369-379), the reading (353-363), its label (337-347) — right-aligned at x 1246
-        int loka = countClear(px, 1150, 1250, 382, 398);
-        check(loka > 15, "loka name beside the tape (" + loka + " px)", f);
-        int region = countClear(px, 1150, 1250, 366, 382);
-        check(region > 15, "region name under it (" + region + " px)", f);
-        int reading = countClear(px, 1200, 1250, 350, 366);
-        check(reading > 15, "the yojana reading under the region (" + reading + " px)", f);
-        // the fitted weapon's face card riding directly on the shard gauge — Single Bolt's
-        // card, its name to the left, the rects derived off Hud.cardY so they cannot drift.
-        // The card art is near-black on the ink field, so this samples LIT pixels
-        float cardY = Hud.cardY(w);
-        int face = countLit(px, (int) Hud.CARD_X, (int) (Hud.CARD_X + Hud.CARD),
-                (int) cardY, (int) (cardY + Hud.CARD));
-        check(face > 10, "weapon face card above the shard gauge (" + face + " px)", f);
-        int weaponName = countClear(px, (int) Hud.CARD_X - 150, (int) Hud.CARD_X - 10,
-                (int) (cardY + Hud.CARD / 2f - 14), (int) (cardY + Hud.CARD / 2f + 4));
-        check(weaponName > 20, "weapon name beside the card (" + weaponName + " px)", f);
-        // the vitals line under the bar block: hull name + purse (buffer rows are UI y-up)
-        int vitals = countClear(px, (int) HudBars.X, (int) HudBars.X + 240,
-                (int) (Hud.VITALS_Y - 12), (int) (Hud.VITALS_Y + 14));
-        check(vitals > 30, "hull + purse line under the bars (" + vitals + " px)", f);
+
+        // the score slab, top-centre: ten digits, and the chain under it with its meter
+        float top = Ui.UI_H - 14;
+        int score = countLit(px, 500, 780, (int) (top - 40), (int) (top - 10));
+        check(score > 100, "bone score digits top-centre (" + score + " px)", f);
+        int chain = countLit(px, 540, 740, (int) (top - 62), (int) (top - 44));
+        check(chain > 20, "the chain line under the score (" + chain + " px)", f);
+
+        // the location tag and the route, right edge
+        int loka = countLit(px, (int) Hud.LOC_X + 8, (int) (Hud.LOC_X + Hud.LOC_W - 8),
+                (int) (Hud.LOC_TOP - 48), (int) (Hud.LOC_TOP - 10));
+        check(loka > 40, "the loka and region names in the tag (" + loka + " px)", f);
+        int reading = countLit(px, (int) (Hud.LOC_X + 90), (int) (Hud.LOC_X + Hud.LOC_W - 8),
+                (int) (Hud.LOC_TOP - 80), (int) (Hud.LOC_TOP - 56));
+        check(reading > 40, "the yojana reading in the tag (" + reading + " px)", f);
+        int ruler = countLit(px, (int) Hud.ROUTE_X - 3, (int) Hud.ROUTE_X + 3,
+                (int) Hud.ROUTE_BOT, (int) Hud.ROUTE_TOP);
+        check(ruler > 300, "the route ruler's line (" + ruler + " px)", f);
+
+        // the armament console: the fitted weapon's name and its figure
+        float cx0 = Hud.consoleX(w);
+        int weapon = countLit(px, (int) (cx0 + 70), (int) (cx0 + Hud.WEAPON_W - 10),
+                (int) (Hud.CONSOLE_Y + 22), (int) (Hud.CONSOLE_Y + Hud.CONSOLE_H - 12));
+        check(weapon > 60, "the weapon name and its DPS in the console (" + weapon + " px)", f);
+        int face = countLit(px, (int) cx0 + 14, (int) cx0 + 14 + (int) Hud.CARD + 6,
+                (int) Hud.CONSOLE_Y + 8, (int) (Hud.CONSOLE_Y + Hud.CONSOLE_H - 8));
+        check(face > 10, "the weapon's face in its plate (" + face + " px)", f);
+        // the radar dial, bottom-left: its ring (copper) crosses the row through its centre
+        int dial = countLit(px, 20, 150, 78, 90);
+        check(dial > 20, "the radar dial's ring and ticks (" + dial + " px)", f);
     }
 
     private static void checkBhu(int[] px, List<String> f) {
-        // below the grand gate the meter is off: no pips, no reading, but loka + region remain
-        int tape = countClear(px, 1254, 1266, 264, 457);
-        check(tape == 0, "no tape in Bhu Loka (" + tape + " stray px)", f);
-        int reading = countClear(px, 1200, 1250, 350, 366);
+        // below the grand gate there is no reading: the tag shows only the loka and region
+        int reading = countLit(px, (int) (Hud.LOC_X + 90), (int) (Hud.LOC_X + Hud.LOC_W - 8),
+                (int) (Hud.LOC_TOP - 80), (int) (Hud.LOC_TOP - 56));
         check(reading == 0, "no yojana reading in Bhu Loka (" + reading + " stray px)", f);
-        int loka = countClear(px, 1150, 1250, 382, 398);
-        check(loka > 15, "loka name still shown in Bhu Loka (" + loka + " px)", f);
+        int loka = countLit(px, (int) Hud.LOC_X + 8, (int) (Hud.LOC_X + Hud.LOC_W - 8),
+                (int) (Hud.LOC_TOP - 48), (int) (Hud.LOC_TOP - 10));
+        check(loka > 40, "loka name still shown in Bhu Loka (" + loka + " px)", f);
     }
 
     private static void checkLow(int[] px, List<String> f) {
-        // hull at 50%: green stops mid-bar, track beyond; shield empty: track everywhere
-        expectNear(px, FILL_X, HULL_Y, 34, 214, 0, 18, "hull green at 50%", f);
-        expectNear(px, H_TRACK_X, HULL_Y, 6, 6, 12, 12, "hull track past 50%", f);
-        expectNear(px, FILL_X, SHIELD_Y, 6, 6, 12, 12, "shield track when empty", f);
-        // dash on cooldown: the pip drains, only the track remains
-        expectNear(px, (int) (HudBars.DASH_X + HudBars.DASH_W / 2),
-                (int) (HudBars.DASH_BOT + HudBars.DASH_H - 3),
-                6, 6, 12, 12, "dash pip empty while recharging", f);
-        // score survives the chain breaking; the combo line is gone with it
-        int score = countGold(px, SCORE_X0, SCORE_X1, SCORE_Y0, SCORE_Y1);
-        check(score > 100, "gold score digits still there (" + score + " px)", f);
-        int combo = countGold(px, SCORE_X0, SCORE_X1, COMBO_Y0, COMBO_Y1);
-        check(combo == 0, "combo line clears when the chain breaks (" + combo + " px)", f);
+        int hull = (int) HudBars.rowY(0), shield = (int) HudBars.rowY(1), dash = (int) HudBars.rowY(3);
+        // hull at 50% is worn (amber) to the fraction and track beyond; shield empty: track throughout
+        fill(px, meterX(0.25f), hull, AMBER, "hull amber at 50%", f);
+        track(px, meterX(0.75f), hull, "hull track past 50%", f);
+        track(px, meterX(0.25f), shield, "shield track when empty", f);
+        // dash on cooldown: the meter is empty
+        track(px, meterX(0.25f), dash, "dash meter empty while recharging", f);
+        // score survives the chain breaking; the chain line goes with it
+        float top = Ui.UI_H - 14;
+        int score = countLit(px, 500, 780, (int) (top - 40), (int) (top - 10));
+        check(score > 100, "bone score digits still there (" + score + " px)", f);
+        int chain = countLit(px, 540, 740, (int) (top - 62), (int) (top - 44));
+        check(chain == 0, "the chain line clears when the chain breaks (" + chain + " px)", f);
     }
 
     /** The docked hangar: the divider between the columns, the hull preview, a face card on

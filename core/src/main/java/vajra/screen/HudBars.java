@@ -1,73 +1,97 @@
 package vajra.screen;
 
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import vajra.world.World;
 
-/** The hull / shield / boost block: three thin bars huddled together in the top-left, drawn
- *  entirely in code — no image assets, no frame. Each bar is a dark track with a value fill
- *  clipped to the fraction; fills from the mask mockup. Below the bars: golden life pips.
- *  Right of the stack: a narrow dash pip filling bottom to top (full = dash ready).
- *  Geometry is public: the screenshot test samples it. */
+/** THE VITALS SLAB — top-left. What keeps the pilot alive, as instrument meters: hull, shield,
+ *  energy and the dash, each a labelled ruler-bar with its figure on the right; under them the
+ *  lives as dharma wheels, the hull flown and the purse.
+ *
+ *  <p>Hull reads green while it is healthy, turns amber under half and clay-red under a quarter
+ *  (and pulses there): the colour is the warning, so the eye need not read the number.
+ *  Geometry is public: the tests sample it. */
 public final class HudBars {
-    // fills sourced from the shared theme
-    public static final float[] HULL_C = { UiTheme.HULL_R, UiTheme.HULL_G, UiTheme.HULL_B };
-    public static final float[] SHIELD_C = { UiTheme.SHIELD_R, UiTheme.SHIELD_G, UiTheme.SHIELD_B };
-    public static final float[] BOOST_C = { UiTheme.BOOST_R, UiTheme.BOOST_G, UiTheme.BOOST_B };
-    public static final float[] GOLD = { UiTheme.GOLD_R, UiTheme.GOLD_G, UiTheme.GOLD_B };
-    private static final float TRACK_A = 0.55f; // unfilled interior
+    public static final float X = 14, TOP = Ui.UI_H - 14, W = 292, H = 124;
+    public static final float BOT = TOP - H;
 
-    // block geometry (public: the screenshot test samples it)
-    public static final float X = 14, TOP = Ui.UI_H - 14, W = 220;
-    public static final float HULL_H = 8, SHIELD_H = 3, BOOST_H = 6;
-    public static final float GAP = 2; // bars huddled close
-    public static final float SHIELD_TOP = TOP - HULL_H - GAP;
-    public static final float BOOST_TOP = SHIELD_TOP - SHIELD_H - GAP;
-    public static final float BOT = BOOST_TOP - BOOST_H; // block bottom edge
+    static final float PAD = 14, LABEL_W = 60;
+    public static final float BAR_X = X + PAD + LABEL_W, BAR_W = 136, BAR_H = 8;
+    static final float NUM_R = X + W - PAD;
+    /** Row centres: hull, shield, energy, dash. */
+    static final float ROW0 = TOP - 24, PITCH = 22;
+    /** The lives row, under the four meters. */
+    public static final float LIVES_Y = TOP - 108;
 
-    public static final float LIVES_Y = BOT - 5, LIVES_R = 3, LIVES_PITCH = 9;
-    public static final float DASH_X = X + W + 4, DASH_W = 4, DASH_BOT = BOT,
-            DASH_H = TOP - BOT; // spans all three bars, fills bottom to top
+    /** The centre line of meter row i: 0 hull, 1 shield, 2 energy, 3 dash. */
+    public static float rowY(int i) { return ROW0 - i * PITCH; }
 
-    /** Track + value fill for the bars, the dash pip and the life pips — shapes pass. */
-    public void shapes(ShapeRenderer s, World w) {
-        bar(s, TOP, HULL_H, frac(w.ship.hp / w.ship.maxHp()), HULL_C);
-        bar(s, SHIELD_TOP, SHIELD_H,
-                frac(w.ship.shieldEnergy / w.ship.shieldCap()), SHIELD_C);
-        bar(s, BOOST_TOP, BOOST_H, frac(w.ship.boostEnergy / 100f), BOOST_C);
-        dash(s, w);
-        lives(s, w);
-    }
-
-    /** One bar: dark track, then the value fill clipped to the fraction, left to right. */
-    private void bar(ShapeRenderer s, float top, float h, float frac, float[] c) {
-        float y = top - h;
-        s.setColor(0, 0, 0, TRACK_A);
-        s.rect(X, y, W, h);
-        if (frac <= 0) return;
-        s.setColor(c[0], c[1], c[2], 1);
-        s.rect(X, y, W * frac, h);
-    }
-
-    /** Narrow pip right of the stack: recharge fills bottom to top, full = dash ready. */
-    private void dash(ShapeRenderer s, World w) {
-        float max = Math.max(0.001f, w.ship.dashCd());
-        float frac = w.ship.dashCd <= 0 ? 1 : 1 - w.ship.dashCd / max;
-        frac = Math.max(0, Math.min(1, frac));
-        s.setColor(0, 0, 0, TRACK_A);
-        s.rect(DASH_X, DASH_BOT, DASH_W, DASH_H);
-        if (frac <= 0) return;
-        s.setColor(GOLD[0], GOLD[1], GOLD[2], 1);
-        s.rect(DASH_X, DASH_BOT, DASH_W, DASH_H * frac); // bottom to top
-    }
-
-    /** Golden life pips under the bars. */
-    private void lives(ShapeRenderer s, World w) {
-        s.setColor(GOLD[0], GOLD[1], GOLD[2], 1);
-        for (int i = 0; i < w.lives; i++)
-            s.circle(X + LIVES_R + i * LIVES_PITCH, LIVES_Y, LIVES_R);
+    /** The colour of a hull at this health: sound, worn, failing. */
+    static float[] hullTone(float f) {
+        return f > 0.5f ? Puranic.VERDIGRIS : f > 0.25f ? Puranic.AMBER : Puranic.TERRACOTTA;
     }
 
     private static float frac(float f) {
         return Math.max(0, Math.min(1, f));
+    }
+
+    private static float dashFrac(World w) {
+        float max = Math.max(0.001f, w.ship.dashCd());
+        return w.ship.dashCd <= 0 ? 1f : frac(1 - w.ship.dashCd / max);
+    }
+
+    /** Shape pass: the slab, the four meters, the wheels. */
+    void shapes(Ui ui, World w) {
+        Puranic.slab(ui, X, BOT, W, H, 1f);
+        float hf = frac(w.ship.hp / w.ship.maxHp());
+        float pulse = hf <= 0.25f && hf > 0 ? 0.65f + 0.35f * (float) Math.sin(Puranic.time() * 8f) : 1f;
+        Puranic.meter(ui, BAR_X, rowY(0) - BAR_H / 2f, BAR_W, BAR_H, hf, hullTone(hf), pulse);
+        Puranic.meter(ui, BAR_X, rowY(1) - BAR_H / 2f, BAR_W, BAR_H,
+                w.ship.shieldEnergy / w.ship.shieldCap(), Puranic.ASH, 1f);
+        Puranic.meter(ui, BAR_X, rowY(2) - BAR_H / 2f, BAR_W, BAR_H, w.ship.boostEnergy / 100f, Puranic.OCHRE, 1f);
+        float df = dashFrac(w);
+        Puranic.meter(ui, BAR_X, rowY(3) - BAR_H / 2f, BAR_W, BAR_H, df, df >= 1f ? Puranic.BRONZE : Puranic.COPPER, 1f);
+        Puranic.c(ui, Puranic.COPPER, 0.4f);
+        ui.shapes.rect(X + PAD, LIVES_Y + 14, W - 2 * PAD, 1);
+        for (int i = 0; i < w.lives; i++) Puranic.wheel(ui, X + PAD + 7 + i * 19, LIVES_Y - 2, 7, Puranic.BRONZE, 1f);
+    }
+
+    // the figures: rebuilt only when a value moves
+    private final int[] shown = { -1, -1, -1 };
+    private final String[] figure = { "", "", "" };
+
+    private void figure(int i, int v) {
+        if (shown[i] != v) {
+            shown[i] = v;
+            figure[i] = Integer.toString(v);
+        }
+    }
+
+    /** Batch pass: labels, figures, the hull's name and the purse. */
+    void text(SpriteBatch b, Ui ui, World w) {
+        String[] label = { "HULL", "SHIELD", "ENERGY", "DASH" };
+        float cap = ui.small.getCapHeight() / 2f, ncap = ui.num.getCapHeight() / 2f;
+        figure(0, Math.round(w.ship.hp));
+        figure(1, Math.round(w.ship.shieldEnergy));
+        figure(2, Math.round(w.ship.boostEnergy));
+        ui.small.setColor(Puranic.COPPER[0], Puranic.COPPER[1], Puranic.COPPER[2], 1f);
+        for (int i = 0; i < label.length; i++) ui.small.draw(b, label[i], X + PAD, rowY(i) + cap);
+        ui.num.setColor(Puranic.BONE[0], Puranic.BONE[1], Puranic.BONE[2], 1f);
+        for (int i = 0; i < 3; i++) ui.right(b, ui.num, figure[i], NUM_R, rowY(i) + ncap);
+        boolean ready = dashFrac(w) >= 1f;
+        if (ready) ui.num.setColor(Puranic.BRONZE[0], Puranic.BRONZE[1], Puranic.BRONZE[2], 1f);
+        ui.right(b, ui.num, ready ? "READY" : String.format(java.util.Locale.ROOT, "%.1f", w.ship.dashCd),
+                NUM_R, rowY(3) + ncap);
+        ui.num.setColor(1, 1, 1, 1);
+
+        // the hull flown and the purse, on the lives row
+        String coins = Integer.toString(w.hangar.coins);
+        float cw = ui.measure(ui.small, coins);
+        ui.small.setColor(Puranic.BONE[0], Puranic.BONE[1], Puranic.BONE[2], 1f);
+        ui.small.draw(b, coins, NUM_R - cw, LIVES_Y - 2 + cap);
+        b.draw(ui.icons.coinUi(), NUM_R - cw - 18, LIVES_Y - 2 - 7, 14, 14);
+        ui.small.setColor(Puranic.COPPER[0], Puranic.COPPER[1], Puranic.COPPER[2], 1f);
+        String name = w.ship.def.name.toUpperCase(java.util.Locale.ROOT);
+        ui.right(b, ui.small, name, NUM_R - cw - 28, LIVES_Y - 2 + cap);
+        ui.small.setColor(1, 1, 1, 1);
     }
 }

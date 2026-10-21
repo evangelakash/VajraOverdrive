@@ -7,11 +7,11 @@ import vajra.ship.Hangar;
 import vajra.world.LokaTable;
 import vajra.world.World;
 
-/** The bottom-right shard readout.
+/** The Astra cells in the armament console.
  *
- *  <p>The one rule that matters is the first: it draws a row per element the LOKA pays, not one
- *  per Pancha Tatva. Atala pays Akasha alone, so four of the five rows would be dead lines and
- *  a lie about where the player's shards come from. */
+ *  <p>The one rule that matters is the first: it draws a cell per element the LOKA pays, not one
+ *  per Pancha Tatva. Atala pays Akasha alone, so four of the five cells would be dead and a
+ *  lie about where the player's shards come from. */
 class ShardGaugeTest {
 
     @Test
@@ -47,16 +47,18 @@ class ShardGaugeTest {
             }
     }
 
-    /** The gauge must not run up into the yojana tape, which owns the right wall. */
+    /** The cells sit in the armament console: a row of one cell is narrow, five are wide, and the
+     *  widest console still fits between the radar dial and the right edge. */
     @Test
-    void theBlockClearsTheDepthTape() {
-        assertTrue(ShardGauge.height(1) < Hud.COL_TOP - Hud.COL_H / 2f,
-                "one row ("
-                        + (int) ShardGauge.height(1) + "px) stays under the tape at y "
-                        + (int) (Hud.COL_TOP - Hud.COL_H / 2f));
-        assertTrue(ShardGauge.height(5) < Hud.COL_TOP - Hud.COL_H / 2f,
-                "and all five still do ("
-                        + (int) ShardGauge.height(5) + "px)");
+    void theCellsFitTheConsole() {
+        assertTrue(ShardGauge.width(1) < ShardGauge.width(5), "the row grows with the loka");
+        World w = new World();
+        w.lokaIndex = 6; // Patala pays all five: the widest the console gets
+        float x0 = Hud.consoleX(w), x1 = x0 + Hud.consoleW(w);
+        float dialRight = HudCompass.CX + HudCompass.R + 14;
+        assertTrue(x0 > dialRight, "the widest console (x " + (int) x0 + ") clears the radar dial (to x "
+                + (int) dialRight + ")");
+        assertTrue(x1 < Ui.UI_W - dialRight, "and the right side is as clear as the left (" + (int) x1 + ")");
     }
 
     /** And it must not run off the left edge at its widest. */

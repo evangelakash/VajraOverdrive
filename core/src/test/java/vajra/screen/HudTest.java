@@ -5,26 +5,47 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 import vajra.world.World;
 
-/** The loka indicator's scroll math — pure altitude, so it is testable without a GL context. */
+/** The HUD's pure maths: the yojana reading, the route ruler and the results card. No GL needed. */
 class HudTest {
+    /** The route is a ruler of the whole climb: higher in the world is higher on the ruler, and
+     *  nothing can land off it. */
     @Test
-    void theTapeFallsAsYouClimbAndRisesAsYouDrop() {
-        float rest = Hud.COL_TOP - Hud.pipY(4, 500);
-        float climb = Hud.COL_TOP - Hud.pipY(4, 550);
-        assertTrue(climb < rest, "climbing drops the pips down the screen: " + rest + " -> " + climb);
-        float drop = Hud.COL_TOP - Hud.pipY(4, 450);
-        assertTrue(rest < drop, "dropping lifts them back up: " + rest + " -> " + drop);
-        for (float y = 0; y < 20000; y += 137) {
-            float v = Hud.pipY(7, y);
-            assertTrue(v >= 0 && v < Hud.COL_H, "the tape stays in its column: " + v);
+    void theRouteRisesWithTheClimbAndStaysOnTheRuler() {
+        World w = new World();
+        float wh = w.regionEnd[w.regionEnd.length - 1];
+        float prev = -1;
+        for (float y = 0; y <= wh; y += 250) {
+            float v = HudRoute.routeY(y, wh);
+            assertTrue(v >= prev, "climbing never moves the ship down the ruler");
+            assertTrue(v >= HudRoute.RBOT && v <= HudRoute.RTOP, "it stays on the ruler: " + v);
+            prev = v;
         }
+        assertEquals(HudRoute.RBOT, HudRoute.routeY(-500, wh), 0.001f, "below the floor clamps to the bottom");
+        assertEquals(HudRoute.RTOP, HudRoute.routeY(wh + 500, wh), 0.001f, "above the ceiling clamps to the top");
+    }
+
+    /** Every gate, shop and checkpoint the route draws must fall inside the ruler. */
+    @Test
+    void everyPointOfInterestLandsOnTheRuler() {
+        World w = new World();
+        float wh = w.regionEnd[w.regionEnd.length - 1];
+        for (float s : w.regionStart) assertTrue(HudRoute.routeY(s, wh) >= HudRoute.RBOT);
+        for (float[] p : w.shops) {
+            float v = HudRoute.routeY(p[1], wh);
+            assertTrue(v >= HudRoute.RBOT && v <= HudRoute.RTOP, "shop at " + p[1]);
+        }
+        for (vajra.world.Checkpoint c : w.checkpoints)
+            if (c != null) {
+                float v = HudRoute.routeY(c.y, wh);
+                assertTrue(v >= HudRoute.RBOT && v <= HudRoute.RTOP, "checkpoint at " + c.y);
+            }
     }
 
     @Test
     void theMeterStartsAtTheAtalaGate() {
         assertEquals(0, Hud.yojanaAt(World.ATALA_Y), "0 at the grand gate");
         assertEquals(10000, Hud.yojanaAt(20600), "the ceiling is Atala's canonical 10,000");
-        assertEquals(0, Hud.yojanaAt(800), "Bhu Loka clamps to 0 (the tape stays hidden)");
+        assertEquals(0, Hud.yojanaAt(800), "Bhu Loka clamps to 0 (the tag shows no reading)");
     }
 
     /** The results card reads the finished run back: score against the best, purse, clock. */

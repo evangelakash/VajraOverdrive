@@ -292,4 +292,39 @@ public final class Puranic {
         c(ui, COPPER, 0.8f);
         disc(ui, x, y1, 1.6f);
     }
+
+    // =============================================================== the HUD's own pieces
+    /** A dark bark slab for the in-flight HUD: dark enough to read over the game's bright rock,
+     *  a copper hairline round it, a faint grain, and a hole for the cord at each end of a long
+     *  one. The HUD's panels are leaves of the same pothi as the menus, set in shade. */
+    public static void slab(Ui ui, float x, float y, float w, float h, float a) {
+        c(ui, NIGHT, 0.82f * a);
+        pill(ui, x, y, w, h, 6);
+        grain(ui, x + 4, y + 2, w - 8, h - 4, (int) (x * 5 + y * 3), Math.max(2, (int) (h / 14)), 0.10f * a, BARK);
+        c(ui, COPPER, 0.55f * a);
+        arcFrame(ui, x, y, w, h, 6, 1f);
+        if (w > 120 && h < 56) { // a long, low slab is a leaf: it carries the cord's holes
+            for (int k = 0; k < 2; k++) {
+                c(ui, INK, 0.9f * a);
+                disc(ui, k == 0 ? x + 8 : x + w - 8, y + h / 2f, 2.4f);
+            }
+        }
+    }
+
+    /** An instrument bar: a dark track, the value fill, and a tick at every tenth, like the
+     *  scale of a gauge. `frac` is 0..1. */
+    public static void meter(Ui ui, float x, float y, float w, float h, float frac, float[] tone, float a) {
+        c(ui, NIGHT, 0.9f * a);
+        ui.shapes.rect(x, y, w, h);
+        frac = Math.max(0f, Math.min(1f, frac));
+        if (frac > 0) {
+            c(ui, tone, a);
+            ui.shapes.rect(x, y, w * frac, h);
+        }
+        c(ui, NIGHT, 0.75f * a);
+        for (int i = 1; i < 10; i++) ui.shapes.rect(x + w * i / 10f - 0.5f, y, 1, h);
+        c(ui, COPPER, 0.45f * a);
+        ui.shapes.rect(x, y - 1, w, 1);
+        ui.shapes.rect(x, y + h, w, 1);
+    }
 }

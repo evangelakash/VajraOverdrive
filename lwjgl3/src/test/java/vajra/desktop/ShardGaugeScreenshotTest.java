@@ -25,13 +25,13 @@ import vajra.screen.Ui;
 import vajra.world.Score;
 import vajra.world.World;
 
-/** The bottom-right shard readout, rendered for real: the gem, the count, the charge track and
- *  the forge bar all land inside the frame, and the block stays clear of the depth tape. PNGs
- *  land in build/ for eyeballing. */
+/** The Astra cells in the armament console, rendered for real: the gem, the count and the charge
+ *  track all land inside the console, and the console stays on screen. PNGs land in build/ for
+ *  eyeballing. */
 class ShardGaugeScreenshotTest {
     private static final int W = 1280, H = 720;
     /** 2 spare segments x 3 rows x 3 cols - the denominator spareCentre() reports against. */
-    private static final int SPARE_SAMPLES = 2 * 3 * 3;
+    private static final int SPARE_SAMPLES = 2 * 3 * 4;
 
     @Test
     void theShardBlockRendersWhereItShould() {
@@ -56,23 +56,23 @@ class ShardGaugeScreenshotTest {
                     hud = new Hud(ui);
                     fbo = new FrameBuffer(Pixmap.Format.RGBA8888, W, H, false);
 
-                    // empty: Atala pays Akasha, so one row, nothing in it
+                    // empty: Atala pays Akasha, so one cell, nothing in it
                     World empty = scene();
                     int[] a = shot(empty);
                     writePng(a, "build/shard-0-empty.png");
-                    checkBlock(a, "empty block", failures);
+                    checkBlock(a, empty, "empty block", failures);
 
                     // held: three whole segments and 60% of the fourth - the charge track mid-fill
                     World held = scene();
                     for (int i = 0; i < 3; i++) held.hangar.addShard(Hangar.AKASHA, 0);
                     int[] b = shot(held);
                     writePng(b, "build/shard-1-held.png");
-                    checkBlock(b, "held block", failures);
+                    checkBlock(b, held, "held block", failures);
                     // unforged: the four spare segments are open frames, so their centres are
                     // still the background
-                    check(spareCentre(b) < SPARE_SAMPLES / 4,
+                    check(spareCentre(b, held) < SPARE_SAMPLES / 4,
                             "before forging the spare segments are HOLLOW sockets ("
-                                    + spareCentre(b) + " lit px in their centres)", failures);
+                                    + spareCentre(b, held) + " lit px in their centres)", failures);
 
                     // forged with a release in hand: the gold hairline goes up around the gem
                     World forged = scene();
@@ -80,11 +80,11 @@ class ShardGaugeScreenshotTest {
                         forged.hangar.addShard(Hangar.AKASHA, 0);
                     int[] c = shot(forged);
                     writePng(c, "build/shard-2-forged.png");
-                    checkBlock(c, "forged block", failures);
+                    checkBlock(c, forged, "forged block", failures);
                     // forged: the same segments are filled cells, so the centres are lit
-                    check(spareCentre(c) > SPARE_SAMPLES * 3 / 5,
+                    check(spareCentre(c, forged) > SPARE_SAMPLES * 3 / 5,
                             "once forged the same segments are SOLID cells ("
-                                    + spareCentre(c) + " lit px in their centres)", failures);
+                                    + spareCentre(c, forged) + " lit px in their centres)", failures);
 
                     fbo.dispose();
                     hud.dispose();
@@ -99,7 +99,7 @@ class ShardGaugeScreenshotTest {
 
             World scene() {
                 World w = new World();
-                w.ship.y = 4100; // Maya Vana - past the grand gate, so the tape is up
+                w.ship.y = 4100; // Maya Vana - past the grand gate
                 w.ship.hp = w.ship.maxHp();
                 w.lives = 3;
                 w.score.points = 123456;
@@ -121,49 +121,43 @@ class ShardGaugeScreenshotTest {
                 return px;
             }
 
-            /** Something must actually be drawn in the block's box, and it must stay clear of the
-             *  depth tape. The block grows UP from the bottom margin, so it occupies
-             *  y MARGIN .. MARGIN + height - not the top of the screen. */
-            void checkBlock(int[] px, String what, List<String> f) {
-                int y0 = (int) vajra.screen.ShardGauge.MARGIN;
-                int y1 = y0 + (int) vajra.screen.ShardGauge.height(1);
-                int x0 = (int) (Ui.UI_W - vajra.screen.ShardGauge.MARGIN
-                        - vajra.screen.ShardGauge.ROW_W);
-                int x1 = (int) (Ui.UI_W - vajra.screen.ShardGauge.MARGIN);
+            /** Something must actually be drawn in the console's cell area, and the console must stay
+             *  on screen. The slab under the cells is a dark leaf, not the backdrop, so "lit" is
+             *  anything brighter than that leaf. */
+            void checkBlock(int[] px, World w, String what, List<String> f) {
+                float cx0 = Hud.consoleX(w) + Hud.WEAPON_W + Hud.CONSOLE_PAD;
+                int y0 = (int) Hud.CONSOLE_Y + 4, y1 = (int) (Hud.CONSOLE_Y + Hud.CONSOLE_H - 12);
+                int x0 = (int) cx0, x1 = (int) (cx0 + vajra.screen.ShardGauge.width(1));
                 int lit = 0;
                 for (int y = y0; y <= y1; y++)
-                    for (int x = x0; x <= x1; x++) {
-                        int p = px[y * W + x];
-                        if (Math.abs(r(p) - 13) > 6 || Math.abs(g(p) - 13) > 6
-                                || Math.abs(b(p) - 26) > 6) lit++;
-                    }
-                if (lit < 100) f.add(what + ": nothing drawn in the block (" + lit + " px)");
-
-                // and it must not collide with the depth tape, which owns the right wall
-                int tapeBottom = 120; // Hud's column: y 120..600
-                if (y1 > tapeBottom)
-                    f.add(what + ": the block tops out at y" + y1 + ", into the tape at y"
-                            + tapeBottom);
+                    for (int x = x0; x <= x1; x++) if (litOverLeaf(px[y * W + x])) lit++;
+                if (lit < 60) f.add(what + ": nothing drawn in the cell (" + lit + " px)");
+                float right = Hud.consoleX(w) + Hud.consoleW(w);
+                if (right > Ui.UI_W) f.add(what + ": the console runs off the screen at x" + (int) right);
             }
 
-            /** Lit pixels in the CENTRE of the two spare segments of Atala's one row. The
+            /** The dark leaf under the cells over the test backdrop is about (13,10,11). */
+            boolean litOverLeaf(int p) {
+                return Math.abs(r(p) - 13) > 12 || Math.abs(g(p) - 10) > 12 || Math.abs(b(p) - 11) > 12;
+            }
+
+            /** Lit pixels in the CENTRE of the two spare segments of Atala's one cell. The
              *  hollow-vs-solid distinction lives entirely in that centre: a socket is a 1 px
-             *  frame with background inside it, a cell is filled. Counting the whole segment
+             *  frame with the leaf inside it, a cell is filled. Counting the whole segment
              *  cannot tell them apart - both have lit edges. */
-            int spareCentre(int[] px) {
+            int spareCentre(int[] px, World w) {
                 // geometry comes from the gauge itself, never recomputed here
-                int segY = (int) vajra.screen.ShardGauge.segY(vajra.screen.ShardGauge.MARGIN);
+                float cellX = vajra.screen.ShardGauge.cellX(
+                        Hud.consoleX(w) + Hud.WEAPON_W + Hud.CONSOLE_PAD, 0);
+                int segY = (int) vajra.screen.ShardGauge.segY(Hud.CONSOLE_Y + 4, Hud.CONSOLE_H - 20);
                 int n = 0;
                 // segments 3 and 4 are the unfilled ones in the "held" scene
                 for (int seg = 3; seg < 5; seg++) {
-                    int cx = (int) (vajra.screen.ShardGauge.segLeft(seg)
+                    int cx = (int) (vajra.screen.ShardGauge.trackX(cellX)
+                            + seg * (vajra.screen.ShardGauge.SEG_W + vajra.screen.ShardGauge.SEG_GAP)
                             + vajra.screen.ShardGauge.SEG_W / 2);
-                    for (int y = segY + 2; y <= segY + vajra.screen.ShardGauge.SEG_H - 3; y++)
-                        for (int x = cx - 1; x <= cx + 1; x++) {
-                            int p = px[y * W + x];
-                            if (Math.abs(r(p) - 13) > 10 || Math.abs(g(p) - 13) > 10
-                                    || Math.abs(b(p) - 26) > 10) n++;
-                        }
+                    for (int y = segY + 1; y <= segY + (int) vajra.screen.ShardGauge.SEG_H - 2; y++)
+                        for (int x = cx - 1; x <= cx + 1; x++) if (litOverLeaf(px[y * W + x])) n++;
                 }
                 return n;
             }

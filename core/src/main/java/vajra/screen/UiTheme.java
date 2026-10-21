@@ -26,7 +26,7 @@ public final class UiTheme {
     public static final String FONT_DISPLAY = "YatraOne-Regular.ttf";           // titles, the lockup: a hand-drawn Indic face
     public static final String FONT_HEAD = "YatraOne-Regular.ttf";            // card headings
     public static final String FONT_TEXT = "Rajdhani-SemiBold.ttf";            // menus, text, numerals: a squared, technical face
-    public static final int MENU_SIZE = 24, TEXT_SIZE = 17, SMALL_SIZE = 13, HEAD_SIZE = 26, NUM_SIZE = 18,
+    public static final int MENU_SIZE = 24, TEXT_SIZE = 17, SMALL_SIZE = 13, HEAD_SIZE = 26, NUM_SIZE = 18, BIG_SIZE = 34,
             DISPLAY_SIZE = 36;
 
     public static final int TITLE_SIZE = 30;

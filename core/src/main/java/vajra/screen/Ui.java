@@ -33,7 +33,8 @@ public final class Ui {
     public final BitmapFont body;   // Yatra One 15: reading text on every menu screen
     public final BitmapFont small;  // Yatra One 12: hints, key legends, fine print
     public final BitmapFont head;   // Rozha One 26: card headings
-    public final BitmapFont num;    // Rozha One 17: prices and numerals
+    public final BitmapFont num;    // Rajdhani SemiBold 18: prices and numerals
+    public final BitmapFont big;    // Rajdhani SemiBold 34: the score and the yojana reading
     public final BitmapFont caption; // Courbe Sans 11: notification captions and tiny labels
     public final BitmapFont ping;   // the OS's own Arial 12: the crew list's plain RTT readout
     public final Icons icons;       // coin + shard faces for menus, prices and the forge meter
@@ -55,7 +56,8 @@ public final class Ui {
         body = smooth(UiTheme.FONT_TEXT, UiTheme.TEXT_SIZE);
         small = smooth(UiTheme.FONT_TEXT, UiTheme.SMALL_SIZE);
         head = smooth(UiTheme.FONT_HEAD, UiTheme.HEAD_SIZE);
-        num = smooth(UiTheme.FONT_HEAD, UiTheme.NUM_SIZE);
+        num = smooth(UiTheme.FONT_TEXT, UiTheme.NUM_SIZE);
+        big = smooth(UiTheme.FONT_TEXT, UiTheme.BIG_SIZE);
         caption = font(UiTheme.FONT_BODY, UiTheme.CAPTION_SIZE);
         ping = fontPlain(12);
         icons = new Icons();
@@ -184,6 +186,7 @@ public final class Ui {
         small.dispose();
         head.dispose();
         num.dispose();
+        big.dispose();
         brand.dispose();
         title.dispose();
         caption.dispose();

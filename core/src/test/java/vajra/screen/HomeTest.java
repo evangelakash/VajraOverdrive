@@ -5,11 +5,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 /** The home screen is a plain menu: the only logic worth pinning is the wrapping cursor and
- *  that the six rows stay in the order the test expects.
+ *  that the seven rows stay in the order the test expects.
  *
- *  <p>Plus its vertical budget. The logo is drawn 2x and everything below it was squeezed to
- *  make room; the first attempt put QUIT straight through the footer hint and nothing but a
- *  rendered frame catches that. These are the numbers, asserted against each other. */
+ *  <p>Plus its vertical budget: the name, its divider, the arch's apex and the seven rows all
+ *  share one column, and a collision (QUIT through the footer once) is only caught by a rendered
+ *  frame or by these numbers, asserted against each other. */
 class HomeTest {
     private static final float FRAME_TOP = Ui.UI_H - 28;  // the hairline frame's top edge
     private static final float HINT_TOP = UiTheme.FOOT_Y + 14;
@@ -28,15 +28,6 @@ class HomeTest {
                 HomeScreen.MENU);
     }
 
-    /** The logo is 2x: the 500x300 asset drawn at 800x480. It carries heavy transparent padding
-     *  (ink is only 330x149 of the 500x300), so the drawn box is far taller than the visible
-     *  text - which is the point: the ink lands at 526x238, exactly twice the old 263x119. */
-    @Test
-    void theLogoIsDrawnAt2x() {
-        assertEquals(800, HomeScreen.LOGO_W, "the asset's 500 wide, doubled");
-        assertEquals(480, HomeScreen.LOGO_H, "its 300 tall, doubled");
-    }
-
     /** The bottom row must clear the footer hint. This is the collision that actually happened. */
     @Test
     void theMenuClearsTheFooterHint() {
@@ -45,7 +36,7 @@ class HomeTest {
                 "QUIT at y" + bottom + " runs into the hint at y" + HINT_TOP);
     }
 
-    /** And the menu's top row clears the divider under the logo (the new row squeezed the pitch). */
+    /** And the menu's top row clears the divider under the name. */
     @Test
     void theMenuClearsTheDivider() {
         assertTrue(HomeScreen.menuY() + 22 < HomeScreen.dividerY(),
@@ -57,5 +48,14 @@ class HomeTest {
     void theRowsAbutWithNoDeadZone() {
         assertEquals(HomeScreen.pitch(), 2 * HomeScreen.halfH(),
                 "double the hit half-height must cover the pitch exactly");
+    }
+
+    /** The name sits under the valance and above the divider; the arch's apex sits between the
+     *  divider and the first row, so the gateway frames the menu and never crosses the title. */
+    @Test
+    void theNameTheDividerAndTheMenuStackInOrder() {
+        assertTrue(HomeScreen.dividerY() < HomeScreen.nameY(), "the divider is under the name");
+        assertTrue(HomeScreen.nameY() < Ui.UI_H - 70, "the name hangs clear of the valance");
+        assertTrue(HomeScreen.menuY() < HomeScreen.dividerY(), "the menu is under the divider");
     }
 }

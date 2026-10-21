@@ -27,9 +27,13 @@ public final class Ui {
     public final ShapeRenderer shapes;      // one renderer, begin/end always paired
     public final BitmapFont hud;    // Courbe Sans: HUD stats, prompts, numbers (FONT_BODY)
     public final BitmapFont score;  // Rajdhani SemiBold 30: the run's score, top-centre
-    public final BitmapFont menu;   // Courbe Sans: subtitles under a heading (FONT_SUBHEAD)
-    public final BitmapFont title;  // Rajdhani SemiBold, wide-tracked: screen headings
-    public final BitmapFont brand;  // Courbe Sans at LOCKUP_SIZE: the splash's game-name line
+    public final BitmapFont menu;   // Yatra One 20: menu rows and sub-headings (smooth, Puranic)
+    public final BitmapFont title;  // Cinzel Decorative, wide-tracked: screen headings (smooth)
+    public final BitmapFont brand;  // Cinzel Decorative at LOCKUP_SIZE: the splash's game-name line
+    public final BitmapFont body;   // Yatra One 15: reading text on every menu screen
+    public final BitmapFont small;  // Yatra One 12: hints, key legends, fine print
+    public final BitmapFont head;   // Rozha One 26: card headings
+    public final BitmapFont num;    // Rozha One 17: prices and numerals
     public final BitmapFont caption; // Courbe Sans 11: notification captions and tiny labels
     public final BitmapFont ping;   // the OS's own Arial 12: the crew list's plain RTT readout
     public final Icons icons;       // coin + shard faces for menus, prices and the forge meter
@@ -45,9 +49,13 @@ public final class Ui {
         shapes = new ShapeRenderer();
         hud = font(UiTheme.FONT_BODY, UiTheme.BODY_SIZE); // techno HUD face — the sci-fi pass
         score = font(UiTheme.FONT_NUMERAL, UiTheme.SCORE_SIZE); // clean condensed numerals
-        menu = font(UiTheme.FONT_SUBHEAD, UiTheme.SUBHEAD_SIZE);
-        title = font(UiTheme.FONT_TITLE, UiTheme.TITLE_SIZE);
-        brand = font(UiTheme.FONT_BODY, UiTheme.LOCKUP_SIZE);
+        menu = smooth(UiTheme.FONT_TEXT, UiTheme.MENU_SIZE);
+        title = smooth(UiTheme.FONT_DISPLAY, UiTheme.DISPLAY_SIZE);
+        brand = smooth(UiTheme.FONT_DISPLAY, UiTheme.LOCKUP_SIZE);
+        body = smooth(UiTheme.FONT_TEXT, UiTheme.TEXT_SIZE);
+        small = smooth(UiTheme.FONT_TEXT, UiTheme.SMALL_SIZE);
+        head = smooth(UiTheme.FONT_HEAD, UiTheme.HEAD_SIZE);
+        num = smooth(UiTheme.FONT_HEAD, UiTheme.NUM_SIZE);
         caption = font(UiTheme.FONT_BODY, UiTheme.CAPTION_SIZE);
         ping = fontPlain(12);
         icons = new Icons();
@@ -94,13 +102,13 @@ public final class Ui {
         float total = -spacing;
         for (int i = 0; i < text.length(); i++) {
             BitmapFont.Glyph g = d.getGlyph(text.charAt(i));
-            if (g != null) total += g.xadvance + spacing;
+            if (g != null) total += g.xadvance * d.scaleX + spacing;
         }
         float x = UI_W / 2 - total / 2;
         for (int i = 0; i < text.length(); i++) {
             BitmapFont.Glyph g = d.getGlyph(text.charAt(i));
             font.draw(batch, text, x, y, i, i + 1, 0, Align.left, false);
-            if (g != null) x += g.xadvance + spacing;
+            if (g != null) x += g.xadvance * d.scaleX + spacing;
         }
     }
 
@@ -135,6 +143,28 @@ public final class Ui {
         return font(UiTheme.FONT_BODY, size);
     }
 
+    /** Outline faces are drawn SMOOTH: rasterised at SUPERSAMPLE times the UI size, mip-mapped and
+     *  drawn scaled back down, so they stay crisp at 1080p, 4K or a small window alike. The
+     *  pixel faces above stay for the HUD only. */
+    private static final int SUPERSAMPLE = 3;
+
+    private static BitmapFont smooth(String file, int size) {
+        FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("fonts/" + file));
+        FreeTypeFontGenerator.FreeTypeFontParameter p = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        p.size = size * SUPERSAMPLE;
+        p.characters = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
+                + "abcdefghijklmnopqrstuvwxyz{|}~\u2014\u2013\u00B0\u00D7\u00B7\u2022\u2019\u2018\u201C\u201D";
+        p.minFilter = com.badlogic.gdx.graphics.Texture.TextureFilter.MipMapLinearLinear;
+        p.magFilter = com.badlogic.gdx.graphics.Texture.TextureFilter.Linear;
+        p.genMipMaps = true;
+        p.kerning = true;
+        BitmapFont f = gen.generateFont(p);
+        gen.dispose();
+        f.getData().setScale(1f / SUPERSAMPLE);
+        f.setUseIntegerPositions(false);
+        return f;
+    }
+
     private static BitmapFont generate(com.badlogic.gdx.files.FileHandle file, int size, String chars) {
         FreeTypeFontGenerator gen = new FreeTypeFontGenerator(file);
         FreeTypeFontGenerator.FreeTypeFontParameter p = new FreeTypeFontGenerator.FreeTypeFontParameter();
@@ -150,6 +180,11 @@ public final class Ui {
         hud.dispose();
         score.dispose();
         menu.dispose();
+        body.dispose();
+        small.dispose();
+        head.dispose();
+        num.dispose();
+        brand.dispose();
         title.dispose();
         caption.dispose();
         ping.dispose();

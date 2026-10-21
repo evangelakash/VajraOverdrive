@@ -97,7 +97,8 @@ public class SplashScreen implements FlowState {
     public void render() {
         ui.shapes.setProjectionMatrix(ui.camera.combined);
         ui.beginShapes(ShapeRenderer.ShapeType.Filled);
-        Template.dim(ui, 1f); // the menu's own ink: reads as black, matches it exactly
+        ui.shapes.setColor(UiTheme.INK_R, UiTheme.INK_G, UiTheme.INK_B, 1f); // the studio card's ink field
+        ui.shapes.rect(0, 0, Ui.UI_W, Ui.UI_H);
         ui.shapes.end();
 
         float a = logoAlpha(t);

@@ -22,6 +22,13 @@ public final class UiTheme {
     public static final String FONT_BODY = "courbe-sans.ttf";
     public static final String FONT_NUMERAL = "Rajdhani-SemiBold.ttf";
 
+    // the Puranic menu faces: smooth outline fonts, never the pixel face (that stays on the HUD)
+    public static final String FONT_DISPLAY = "RozhaOne-Regular.ttf";           // titles, the lockup
+    public static final String FONT_HEAD = "RozhaOne-Regular.ttf";            // headings, numerals, prices
+    public static final String FONT_TEXT = "YatraOne-Regular.ttf";            // menus and reading text
+    public static final int MENU_SIZE = 20, TEXT_SIZE = 15, SMALL_SIZE = 12, HEAD_SIZE = 26, NUM_SIZE = 17,
+            DISPLAY_SIZE = 36;
+
     public static final int TITLE_SIZE = 30;
     public static final int LOCKUP_SIZE = 34;   // the splash's game-name lockup, the brand line
     public static final int SUBHEAD_SIZE = 16;

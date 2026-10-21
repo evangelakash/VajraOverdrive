@@ -54,15 +54,15 @@ class TransitionScreenshotTest {
                     flow = new Flow();
                     flow.set(new HomeScreen(flow, ui, batch)); // exactly VajraGame's boot
 
-                    // 1. the idle title: the logo and the gold PLAY row (no ship, no hold)
+                    // 1. the idle title: the gold name under the valance and the gold PLAY row
                     int[] home = frame();
                     writePng(home, "build/trans-home.png");
-                    check(gold(home, 440, 840, 400, 540) > 50,
-                            "home frame shows the gold logo (" + gold(home, 440, 840, 400, 540) + " px)",
+                    check(gold(home, 330, 950, 600, 650) > 50,
+                            "home frame shows the gold name (" + gold(home, 330, 950, 600, 650) + " px)",
                             failures);
-                    // PLAY is the selected row: its gold text baseline is UI 300 -> screen 420
-                    check(gold(home, 560, 720, 400, 432) > 30,
-                            "home frame shows the gold PLAY row (" + gold(home, 560, 720, 400, 432) + " px)",
+                    // PLAY is the selected row: its plaque and text sit at UI 440-470
+                    check(gold(home, 560, 720, 440, 470) > 30,
+                            "home frame shows the gold PLAY row (" + gold(home, 560, 720, 440, 470) + " px)",
                             failures);
 
                     // 1b. the PROFILE row opens the pilot's page; ESC hands back home
@@ -74,13 +74,13 @@ class TransitionScreenshotTest {
                             "PROFILE opens the pilot page", failures);
                     int[] profile = frame();
                     writePng(profile, "build/trans-profile.png");
-                    // the pilot's name in the brand face at UI 508 (bottom-up readback)
-                    check(gold(profile, 400, 880, 500, 545) > 30,
-                            "pilot page shows the name line (" + gold(profile, 400, 880, 500, 545) + " px)",
+                    // the pilot's name, one gold letter per cell at UI 462-496 (bottom-up readback)
+                    check(gold(profile, 400, 880, 458, 500) > 30,
+                            "pilot page shows the name line (" + gold(profile, 400, 880, 458, 500) + " px)",
                             failures);
                     // the ledger lines under it (whitish menu ink): BEST/RUNS/KILLS/POINTS/TIME
-                    check(bright(profile, 400, 880, 380, 475) > 50,
-                            "pilot page shows the ledger lines (" + bright(profile, 400, 880, 380, 475) + " px)",
+                    check(bright(profile, 400, 880, 290, 410) > 50,
+                            "pilot page shows the ledger lines (" + bright(profile, 400, 880, 290, 410) + " px)",
                             failures);
                     flow.keyDown(com.badlogic.gdx.Input.Keys.ESCAPE);
                     check(flow.top() instanceof HomeScreen, "ESC leaves the pilot page", failures);

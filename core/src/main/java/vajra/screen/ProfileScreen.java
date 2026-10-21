@@ -23,22 +23,22 @@ import vajra.profile.Profiles;
 public class ProfileScreen implements FlowState {
     static final String[] ROWS = {"SWITCH PILOT", "RENAME", "NEW PILOT", "BACK"};
     static final int NAME_LEN = 10;                    // hard cap for a pilot name
-    private static final float ROW_Y = 330;
-    private static final float PITCH = 50;
+    private static final float ROW_Y = 250;
+    private static final float PITCH = 44;
     private static final float HALF_W = 200, HALF_H = 22;
 
     // callsign plate
-    private static final float PLATE_W = 430, PLATE_Y = 466, PLATE_H = 66;
-    private static final float CELL_W = 34, CELL_H = 34, CELL_GAP = 6, CELL_Y = 490;
+    private static final float PLATE_W = 430, PLATE_Y = 436, PLATE_H = 70;
+    private static final float CELL_W = 34, CELL_H = 34, CELL_GAP = 6, CELL_Y = 462;
 
     // ledger panel
-    private static final float LEDGER_W = 360, LEDGER_TOP = 456, LEDGER_PITCH = 19, LEDGER_PAD = 8;
+    private static final float LEDGER_W = 360, LEDGER_TOP = 414, LEDGER_PITCH = 22, LEDGER_PAD = 8;
     private static final String[] LABELS = {"BEST", "RUNS", "KILLS", "POINTS", "TIME"};
 
     // palette
-    private static final float[] CYAN = {0.35f, 0.85f, 0.95f};
-    private static final float[] CYAN_DIM = {0.10f, 0.28f, 0.34f};
-    private static final float[] PANEL = {0.03f, 0.07f, 0.10f};
+    private static final float[] CYAN = {0.96f, 0.78f, 0.30f};   // gold leaf
+    private static final float[] CYAN_DIM = {0.42f, 0.30f, 0.13f}; // brass, dim
+    private static final float[] PANEL = Puranic.PLATE;
 
     private final Flow flow;
     private final Ui ui;
@@ -237,12 +237,7 @@ public class ProfileScreen implements FlowState {
             Ornament.markers(ui, Template.COL, menu.label(menu.selected()), menu.rowY(menu.selected()));
 
         // --- callsign plate
-        col(PANEL, 0.9f);
-        rect(plateX, PLATE_Y, PLATE_W, PLATE_H);
-        col(CYAN_DIM, 1f);
-        frame(plateX, PLATE_Y, PLATE_W, PLATE_H, 1);
-        ui.shapes.setColor(UiTheme.GOLD_R, UiTheme.GOLD_G, UiTheme.GOLD_B, editing ? 1f : 0.7f);
-        brackets(plateX - 4, PLATE_Y - 4, PLATE_W + 8, PLATE_H + 8, 14, 2);
+        Puranic.plate(ui, plateX, PLATE_Y, PLATE_W, PLATE_H, 0.95f, editing ? 1f : 0.75f);
 
         for (int i = 0; i < NAME_LEN; i++) {
             float x = cellsX + i * (CELL_W + CELL_GAP);
@@ -259,14 +254,10 @@ public class ProfileScreen implements FlowState {
         }
 
         // --- ledger panel: ruled rows
-        col(PANEL, 0.9f);
-        rect(ledgerX, ledgerY, LEDGER_W, ledgerH);
-        col(CYAN_DIM, 1f);
-        frame(ledgerX, ledgerY, LEDGER_W, ledgerH, 1);
+        Puranic.plate(ui, ledgerX, ledgerY, LEDGER_W, ledgerH, 0.95f, 0.75f);
+        col(CYAN_DIM, 0.8f);
         for (int i = 1; i < LABELS.length; i++)
-            rect(ledgerX + 8, LEDGER_TOP - LEDGER_PAD - i * LEDGER_PITCH, LEDGER_W - 16, 1);
-        col(CYAN, 0.9f);
-        rect(ledgerX, ledgerY + ledgerH - 2, 36, 2);       // accent tab, top-left
+            rect(ledgerX + 14, LEDGER_TOP - LEDGER_PAD - i * LEDGER_PITCH + 3, LEDGER_W - 28, 1);
         ui.shapes.end();
 
         batch.setProjectionMatrix(ui.camera.combined);
@@ -275,26 +266,26 @@ public class ProfileScreen implements FlowState {
 
         // plate caption + counter
         float capY = PLATE_Y + 18;
-        text(ui.menu, editing ? "TYPE CALLSIGN" : "CALLSIGN", plateX + 12, capY, CYAN, 0.8f);
+        text(ui.small, editing ? "TYPE CALLSIGN" : "CALLSIGN", plateX + 16, capY, CYAN, 0.95f);
         String count = name.length() + "/" + NAME_LEN;
-        layout.setText(ui.menu, count);
-        text(ui.menu, count, plateX + PLATE_W - 12 - layout.width, capY, CYAN, 0.8f);
+        layout.setText(ui.small, count);
+        text(ui.small, count, plateX + PLATE_W - 16 - layout.width, capY, CYAN, 0.95f);
 
         // the name, one glyph per cell
         for (int i = 0; i < name.length() && i < NAME_LEN; i++) {
             float x = cellsX + i * (CELL_W + CELL_GAP) + CELL_W / 2f;
             boolean onCursor = false;
-            textCentered(ui.menu, String.valueOf(name.charAt(i)), x, CELL_Y + CELL_H / 2f,
+            textCentered(ui.head, String.valueOf(name.charAt(i)), x, CELL_Y + CELL_H / 2f,
                     new float[]{UiTheme.GOLD_R, UiTheme.GOLD_G, UiTheme.GOLD_B}, onCursor ? 0f : 1f);
         }
 
         // ledger text: label left, value right
         for (int i = 0; i < LABELS.length; i++) {
             float y = LEDGER_TOP - LEDGER_PAD - i * LEDGER_PITCH - 3;
-            text(ui.menu, LABELS[i], ledgerX + 16, y, CYAN, 0.85f);
+            text(ui.body, LABELS[i], ledgerX + 18, y, CYAN, 0.95f);
             String v = value(i);
-            layout.setText(ui.menu, v);
-            text(ui.menu, v, ledgerX + LEDGER_W - 16 - layout.width, y, new float[]{1, 1, 1}, 1f);
+            layout.setText(ui.num, v);
+            text(ui.num, v, ledgerX + LEDGER_W - 18 - layout.width, y, Puranic.IVORY, 1f);
         }
 
         // action rows (dimmed while the name is being typed)

@@ -20,13 +20,13 @@ import vajra.net.UdpTransport;
  *  run seed and every pilot's lobby hands off into the same seeded shadow race (each
  *  flies it alone; the roster's book keeps everyone's best). ESC or LEAVE drops out. */
 public class LobbyScreen implements FlowState {
-    private static final float MSG_Y = 505;   // the one message line: code, status, or seed
-    private static final float ROSTER_Y = 440, ROSTER_PITCH = 24;
+    private static final float MSG_Y = 518;   // the one message line: code, status, or seed
+    private static final float ROSTER_Y = 412, ROSTER_PITCH = 28;
     private static final float ROW_Y = 230, PITCH = 44, HALF_W = 200, HALF_H = 22;
 
     // the pilots table's columns, relative to the screen centre: who, ready, ping, best flight
-    private static final float COL_SWATCH = -226, COL_NAME = -208, COL_READY = 40,
-            COL_PING = 128, COL_PTS = 226;
+    private static final float COL_SWATCH = -238, COL_NAME = -216, COL_READY = 10,
+            COL_PING = 150, COL_PTS = 232;
 
     private final Flow flow;
     private final Ui ui;
@@ -131,8 +131,10 @@ public class LobbyScreen implements FlowState {
         if (session != null) {
             Ornament.markers(ui, cx, menu.label(menu.selected()), menu.rowY(menu.selected()));
             // the table's rule and every row's seat swatch + the talking diamond
-            ui.shapes.setColor(Color.GRAY);
-            ui.shapes.rect(cx - 240, ROSTER_Y + 6, 480, 2);
+            float plateTop = ROSTER_Y + 44, plateBot = ROSTER_Y - 3 * ROSTER_PITCH - 22;
+            Puranic.plate(ui, cx - 266, plateBot, 532, plateTop - plateBot, 0.92f, 0.85f);
+            Puranic.c(ui, Puranic.BRASS, 0.6f);
+            ui.shapes.rect(cx - 244, ROSTER_Y + 8, 488, 1.5f);
             for (int i = 0; i < session.count(); i++) {
                 Msg.Member member = session.member(i);
                 float y = rosterY(i);
@@ -152,34 +154,40 @@ public class LobbyScreen implements FlowState {
         batch.setProjectionMatrix(ui.camera.combined);
         batch.begin();
         Template.title(ui, batch, "LOBBY", Template.TITLE_Y, 1);
+        ui.menu.setColor(1f, 0.93f, 0.62f, 1f);
         ui.centered(batch, ui.menu, session == null ? "NO SESSION" : message(), MSG_Y);
+        ui.menu.setColor(Color.WHITE);
         String door = doorLine();
-        if (!door.isEmpty()) ui.centered(batch, ui.menu, door, MSG_Y - 26);
+        if (!door.isEmpty()) {
+            ui.small.setColor(Puranic.BRASS[0], Puranic.BRASS[1], Puranic.BRASS[2], 1f);
+            ui.centered(batch, ui.small, door, MSG_Y - 28);
+            ui.small.setColor(Color.WHITE);
+        }
         if (session != null) {
-            float head = ROSTER_Y + 22; // the column labels over the rule
-            ui.menu.setColor(Color.GRAY);
-            ui.menu.draw(batch, "PILOT", cx + COL_NAME, head);
-            ui.menu.draw(batch, "STATUS", cx + COL_READY, head);
-            ui.menu.draw(batch, "PING", cx + COL_PING, head);
-            ui.menu.draw(batch, "BEST", cx + COL_PTS, head);
-            ui.menu.setColor(Color.WHITE);
+            float head = ROSTER_Y + 30; // the column labels over the rule
+            ui.small.setColor(Puranic.BRASS[0], Puranic.BRASS[1], Puranic.BRASS[2], 1f);
+            ui.small.draw(batch, "PILOT", cx + COL_NAME, head);
+            ui.small.draw(batch, "STATUS", cx + COL_READY, head);
+            ui.small.draw(batch, "PING", cx + COL_PING, head);
+            ui.right(batch, ui.small, "BEST", cx + COL_PTS + 14, head);
+            ui.small.setColor(Color.WHITE);
             for (int i = 0; i < session.count(); i++) {
                 Msg.Member member = session.member(i);
                 float y = rosterY(i);
                 String name = member.name + (member.id == 0 ? " (HOST)" : "");
-                ui.menu.setColor(SeatColors.of(member.id));
-                ui.menu.draw(batch, name, cx + COL_NAME, y);
-                ui.menu.setColor(member.ready ? SeatColors.GO : SeatColors.WAIT);
-                ui.menu.draw(batch, member.ready ? "READY" : "NOT READY", cx + COL_READY, y);
+                ui.body.setColor(SeatColors.of(member.id));
+                ui.body.draw(batch, name, cx + COL_NAME, y);
+                ui.body.setColor(member.ready ? SeatColors.GO : SeatColors.WAIT);
+                ui.body.draw(batch, member.ready ? "READY" : "NOT READY", cx + COL_READY, y);
                 int ping = session.pingTo(member.id);
-                ui.menu.setColor(ping > 0 && ping > 90 ? SeatColors.WAIT
+                ui.body.setColor(ping > 0 && ping > 90 ? SeatColors.WAIT
                         : ping > 0 ? SeatColors.GO : Color.GRAY);
-                ui.menu.draw(batch, ping > 0 ? Integer.toString(ping) : "-", cx + COL_PING, y);
-                ui.menu.setColor(Color.GRAY);
-                ui.right(batch, ui.menu, member.points > 0
+                ui.body.draw(batch, ping > 0 ? Integer.toString(ping) : "-", cx + COL_PING, y);
+                ui.body.setColor(Puranic.IVORY[0], Puranic.IVORY[1], Puranic.IVORY[2], 0.8f);
+                ui.right(batch, ui.body, member.points > 0
                         ? String.format(java.util.Locale.US, "%,d", member.points) : "-",
                         cx + COL_PTS + 14, y);
-                ui.menu.setColor(Color.WHITE);
+                ui.body.setColor(Color.WHITE);
             }
         }
         for (int i = 0; i < menu.count(); i++)

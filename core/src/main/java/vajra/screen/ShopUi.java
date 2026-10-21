@@ -118,7 +118,7 @@ public final class ShopUi {
     private static final float PAT_CHART_PITCH = 31;
 
     // --- FORGE ---
-    private static final float FORGE_CH = 232, FORGE_GAP = 14, FORGE_MAXW = 190;
+    private static final float FORGE_CH = 232, FORGE_GAP = 26, FORGE_MAXW = 190;
 
     // --- VAULT ---
     private static final float VAULT_PITCH = 40, VAULT_BTN_W = 420, VAULT_BTN_H = 44;
@@ -126,15 +126,15 @@ public final class ShopUi {
     private static final String[] STAT_NAMES = { "HP", "SPEED", "TURN" };
 
     // =============================================================== palette (Puranic)
-    private static final float[] SAF = { 1.00f, 0.62f, 0.14f };      // saffron: selected, actionable
-    private static final float[] BRASS = { 0.80f, 0.62f, 0.30f };    // dark brass: hairlines, quiet type
-    private static final float[] CREAM = { 0.97f, 0.92f, 0.80f };    // lotus cream: the words
-    private static final float[] PEACOCK = { 0.36f, 0.86f, 0.74f };  // a gain
-    private static final float[] ROSE = { 0.96f, 0.45f, 0.50f };     // a loss
-    private static final float[] LAVENDER = { 0.64f, 0.62f, 1.00f }; // the hull you are flying
-    private static final float[] DEEP = { 0.030f, 0.025f, 0.075f };  // indigo, the dark end
-    private static final float[] INDIGO = { 0.070f, 0.055f, 0.150f }; // indigo, the lit end (HudScreenshotTest wants the corner within 16 of ink)
-    private static final float[] PANEL = { 0.105f, 0.085f, 0.250f }; // a card's fill
+    private static final float[] SAF = Puranic.SAFFRON;      // saffron: selected, actionable
+    private static final float[] BRASS = Puranic.BRASS;       // brass: hairlines, quiet type
+    private static final float[] CREAM = Puranic.IVORY;       // ivory: the words
+    private static final float[] PEACOCK = Puranic.PEACOCK;   // a gain
+    private static final float[] ROSE = Puranic.ROSE;         // a loss
+    private static final float[] LAVENDER = Puranic.LAVENDER; // the hull you are flying
+    private static final float[] INDIGO = Puranic.INDIGO;
+    private static final float[] DEEP = Puranic.NIGHT;        // the night, dark end
+    private static final float[] PANEL = Puranic.PLATE;       // a card's lacquered fill
 
     private final Ui ui;
     private final GlyphLayout gl = new GlyphLayout();
@@ -759,17 +759,21 @@ public final class ShopUi {
     private void fill(float x, float y, float w, float h, float a) { gold(a); ui.shapes.rect(x, y, w, h); }
 
     private float capH() {
-        gl.setText(ui.hud, "H");
+        gl.setText(ui.body, "H");
         return gl.height;
     }
 
     private float textW(String s) {
-        gl.setText(ui.hud, s);
+        gl.setText(ui.body, s);
         return gl.width;
     }
 
     /** Four corner ticks round a box, like a viewfinder — the screen's one ornament. */
     private void ticks(float x0, float y0, float x1, float y1, float len, float alpha) {
+        if (len >= 10 && x1 - x0 > 60 && y1 - y0 > 40) { // a card: the gold-leaf border, lotus in each corner
+            Puranic.border(ui, x0, y0, x1 - x0, y1 - y0, Math.max(0.4f, alpha));
+            return;
+        }
         if (alpha > 0.85f) gold(alpha);
         else brass(alpha);
         float w = 1.5f;
@@ -877,18 +881,18 @@ public final class ShopUi {
     private void put(SpriteBatch b, String s, float x, float cy, int anchor, float a, boolean gold) {
         float w = textW(s);
         float px = anchor < 0 ? x : anchor == 0 ? x - w / 2f : x - w;
-        if (gold) ui.hud.setColor(SAF[0], SAF[1], SAF[2], a);
-        else ui.hud.setColor(CREAM[0], CREAM[1], CREAM[2], a);
-        ui.hud.draw(b, s, px, cy + cap / 2f);
-        ui.hud.setColor(1, 1, 1, 1);
+        if (gold) ui.body.setColor(SAF[0], SAF[1], SAF[2], a);
+        else ui.body.setColor(CREAM[0], CREAM[1], CREAM[2], a);
+        ui.body.draw(b, s, px, cy + cap / 2f);
+        ui.body.setColor(1, 1, 1, 1);
     }
 
     /** A paragraph wrapped to a width, top line's centre at `topCy`; returns the height used. */
     private float wrapped(SpriteBatch b, String s, float x, float topCy, float width, float[] c) {
-        ui.hud.setColor(c[0], c[1], c[2], 1f);
-        gl.setText(ui.hud, s, ui.hud.getColor(), width, com.badlogic.gdx.utils.Align.left, true);
-        ui.hud.draw(b, gl, x, topCy + cap / 2f);
-        ui.hud.setColor(1, 1, 1, 1);
+        ui.body.setColor(c[0], c[1], c[2], 1f);
+        gl.setText(ui.body, s, ui.body.getColor(), width, com.badlogic.gdx.utils.Align.left, true);
+        ui.body.draw(b, gl, x, topCy + cap / 2f);
+        ui.body.setColor(1, 1, 1, 1);
         return gl.height;
     }
 
@@ -896,9 +900,9 @@ public final class ShopUi {
     private void tinted(SpriteBatch b, String s, float x, float cy, int anchor, float[] c, float a) {
         float w = textW(s);
         float px = anchor < 0 ? x : anchor == 0 ? x - w / 2f : x - w;
-        ui.hud.setColor(c[0], c[1], c[2], a);
-        ui.hud.draw(b, s, px, cy + cap / 2f);
-        ui.hud.setColor(1, 1, 1, 1);
+        ui.body.setColor(c[0], c[1], c[2], a);
+        ui.body.draw(b, s, px, cy + cap / 2f);
+        ui.body.setColor(1, 1, 1, 1);
     }
 
     private void left(SpriteBatch b, String s, float x, float cy, float a) { put(b, s, x, cy, -1, a, false); }
@@ -925,7 +929,7 @@ public final class ShopUi {
                            String suffix, boolean hot, float a) {
         float al = hot ? 1f : a;
         b.setColor(1, 1, 1, al);
-        b.draw(ui.icons.coin(), x, cy - 8, 16, 16);
+        b.draw(ui.icons.coinUi(), x, cy - 8, 16, 16);
         b.setColor(1, 1, 1, 1);
         x += 22;
         String cs = Integer.toString(coins);
@@ -935,7 +939,7 @@ public final class ShopUi {
             put(b, "  +  ", x, cy, -1, al, hot);
             x += textW("  +  ");
             b.setColor(1, 1, 1, al);
-            b.draw(ui.icons.shard(el), x, cy - 8, 16, 16);
+            b.draw(ui.icons.shardUi(el), x, cy - 8, 16, 16);
             b.setColor(1, 1, 1, 1);
             x += 22;
             String ss = Integer.toString(shards);
@@ -1043,13 +1047,8 @@ public final class ShopUi {
         cap = capH();
         refreshNext(w);
         enter();
-        // OPAQUE: the world behind the hangar is not a backdrop. Indigo, lit from above.
-        ui.shapes.rect(0, 0, Ui.UI_W, Ui.UI_H,
-                new com.badlogic.gdx.graphics.Color(DEEP[0], DEEP[1], DEEP[2], 1f),
-                new com.badlogic.gdx.graphics.Color(DEEP[0], DEEP[1], DEEP[2], 1f),
-                new com.badlogic.gdx.graphics.Color(INDIGO[0], INDIGO[1], INDIGO[2], 1f),
-                new com.badlogic.gdx.graphics.Color(INDIGO[0], INDIGO[1], INDIGO[2], 1f));
-        halo();
+        // OPAQUE: the world behind the hangar is not a backdrop. The night street of the bazaar.
+        Template.dim(ui, 1f);
         Ornament.frame(ui);
         hair(M0, HEAD_RULE_Y, M1 - M0, 0.30f);
         hair(BODY_X, ANSWER_RULE_Y, BODY_W, 0.22f);
@@ -1065,30 +1064,36 @@ public final class ShopUi {
         leave();
     }
 
-    /** The vajra's halo: three faint rings behind the page, there for the eye and nothing else. */
-    private void halo() {
-        float cx = BODY_CX + 120, cy = BODY_Y + BODY_H / 2f;
-        for (int i = 0; i < 3; i++) {
-            float r = 150 + i * 90;
-            brass(0.035f);
-            int segs = 72;
-            for (int k = 0; k < segs; k++) {
-                float a0 = (float) (k * Math.PI * 2 / segs), a1 = (float) ((k + 1) * Math.PI * 2 / segs);
-                ui.shapes.rectLine(cx + (float) Math.cos(a0) * r, cy + (float) Math.sin(a0) * r,
-                        cx + (float) Math.cos(a1) * r, cy + (float) Math.sin(a1) * r, 1.5f);
-            }
-        }
-    }
-
     private void railShapes() {
         vhair(DIV_X, BODY_Y - 8, BODY_TOP - BODY_Y + 16, 0.22f);
-        float cy = railY(tab);
-        gold(1f);
-        ui.shapes.rect(DIV_X - 1, cy - 13, 3, 26);   // the bright mark where the rail meets the page
-        Ornament.diamond(ui, RAIL_X + 5, cy, 3.5f);
+        // a cord down the rail, and each section a palm-leaf board hung from it
+        float cordX = RAIL_X + 4, top = BODY_TOP + 8, bottom = railY(TAB_NAMES.length - 1) - 22;
+        Puranic.c(ui, Puranic.BRASS, 0.8f);
+        ui.shapes.rect(cordX - 1, bottom, 2, top - bottom);
+        Puranic.c(ui, Puranic.GOLD, 1f);
+        Puranic.disc(ui, cordX, top, 3.4f);
+        for (int i = 0; i < TAB_NAMES.length; i++) {
+            float cy = railY(i), x = RAIL_X + 12, w = DIV_X - 10 - x, h = 28;
+            boolean on = i == tab, hot = hoverRegion == TAB && hoverRow == i && probeSub < 0;
+            Puranic.c(ui, Puranic.BRASS, 0.85f);
+            Puranic.line(ui, cordX, cy, x + 4, cy, 1.4f);
+            Puranic.c(ui, Puranic.GOLD, 1f);
+            Puranic.disc(ui, cordX, cy, 2.6f);
+            if (on) {
+                tone(SAF, 0.95f);
+                Puranic.pill(ui, x, cy - h / 2f, w, h, 9);
+                Puranic.c(ui, Puranic.GOLD, 1f);
+                Puranic.arcFrame(ui, x, cy - h / 2f, w, h, 9, 1.6f);
+            } else {
+                tone(Puranic.SANDAL, hot ? 0.95f : 0.72f);
+                Puranic.pill(ui, x, cy - h / 2f, w, h, 9);
+                Puranic.c(ui, Puranic.BRASS, hot ? 1f : 0.7f);
+                Puranic.arcFrame(ui, x, cy - h / 2f, w, h, 9, 1.2f);
+            }
+        }
         for (int g = 0; g < GROUP_NAMES.length; g++) {
             float gw = textW(GROUP_NAMES[g]);
-            hair(RAIL_X + gw + 10, BODY_TOP - GROUP_DY[g], DIV_X - 18 - RAIL_X - gw - 10, 0.18f);
+            hair(RAIL_X + gw + 22, BODY_TOP - GROUP_DY[g], DIV_X - 18 - RAIL_X - gw - 22, 0.25f);
         }
     }
 
@@ -1153,8 +1158,8 @@ public final class ShopUi {
         }
         float ly = fleetStatY(n, ShopStats.AXES - 1) - 24;
         swatch(tx, ly, SAF, true);
-        swatch(tx + 106, ly, BRASS, false);
-        if (ship != h.shipIndex) swatch(tx + 232, ly, LAVENDER, false);
+        swatch(tx + 140, ly, BRASS, false);
+        if (ship != h.shipIndex) swatch(tx + 268, ly, LAVENDER, false);
         vhair(fleetUpgX() - 24, fleetStatY(n, 5) - 8, fleetHeadY(n) - fleetStatY(n, 5) + 20, 0.22f);
     }
 
@@ -1232,7 +1237,7 @@ public final class ShopUi {
             }
         }
         // the fan: which way and how wide it throws
-        float fx = PAT_CARD_X + 26, fy = PAT_CARD_Y0 + 36, fl = 44;
+        float fx = PAT_CARD_X + 28, fy = PAT_CARD_Y0 + 52, fl = 38;
         brass(0.5f);
         ui.shapes.rect(fx - 3, fy - 3, 6, 6);
         for (int i = 0; i < ss.rays; i++) {
@@ -1252,7 +1257,7 @@ public final class ShopUi {
             }
         }
         // two seconds of fire, one tick per shot of a held trigger
-        float sx0 = PAT_CARD_X + 116, sw = M1 - 20 - sx0, sy = PAT_CARD_Y0 + 36;
+        float sx0 = PAT_CARD_X + 116, sw = M1 - 20 - sx0, sy = PAT_CARD_Y0 + 52;
         brass(0.3f);
         ui.shapes.rect(sx0, sy - 1, sw, 2);
         float gap = sel.burstGap;
@@ -1337,15 +1342,20 @@ public final class ShopUi {
 
     private void drawHeader(SpriteBatch b, Hangar h) {
         float hy = HEAD_Y + 5 - cap / 2f; // text top rides HEAD_Y + 5, as the wallet always has
-        left(b, "ARMOURY OF ATALA", M0, hy, 1f);
-        leftGold(b, "/  " + TAB_NAMES[tab], M0 + textW("ARMOURY OF ATALA") + 14, hy, 1f);
-        tinted(b, "FORGED IN MAYA'S FIRES  /  RECLAIMED FROM BALA", CX + 40, hy, 0, BRASS, 0.8f);
+        ui.head.setColor(Puranic.GOLD[0], Puranic.GOLD[1], Puranic.GOLD[2], 1f);
+        ui.head.draw(b, "ARMOURY OF ATALA", M0, hy + ui.head.getCapHeight() / 2f);
+        float nameW = ui.measure(ui.head, "ARMOURY OF ATALA");
+        ui.head.setColor(1, 1, 1, 1);
+        tinted(b, "/  " + TAB_NAMES[tab], M0 + nameW + 14, hy, -1, SAF, 1f);
+        ui.small.setColor(BRASS[0], BRASS[1], BRASS[2], 0.95f);
+        ui.small.draw(b, "FORGED IN MAYA'S FIRES  /  RECLAIMED FROM BALA", 560, hy + ui.small.getCapHeight() / 2f);
+        ui.small.setColor(1, 1, 1, 1);
 
         int el = lokaElement(curLoka);
-        b.draw(ui.icons.coin(), WALLET_X1 - WALLET_COINS_W, hy + cap / 2f - 13, 18, 18);
+        b.draw(ui.icons.coinUi(), WALLET_X1 - WALLET_COINS_W, hy + cap / 2f - 13, 18, 18);
         right(b, Integer.toString(h.coins), WALLET_X1, hy, 1f);
         float sx = WALLET_X1 - WALLET_COINS_W - WALLET_GAP;
-        b.draw(ui.icons.shard(el), sx - WALLET_SHARDS_W, hy + cap / 2f - 13, 18, 18);
+        b.draw(ui.icons.shardUi(el), sx - WALLET_SHARDS_W, hy + cap / 2f - 13, 18, 18);
         right(b, Integer.toString(h.shardCount()), sx, hy, 1f);
         float a = h.shardCount() == 0 ? 0.4f : 1f; // nothing to sell: dim, but it stays put
         boolean hot = hoverRegion == SELL && h.shardCount() > 0;
@@ -1356,14 +1366,13 @@ public final class ShopUi {
 
     private void railText(SpriteBatch b, Hangar h, int loka) {
         for (int g = 0; g < GROUP_NAMES.length; g++)
-            left(b, GROUP_NAMES[g], RAIL_X, BODY_TOP - GROUP_DY[g], UiTheme.A_HINT);
+            tinted(b, GROUP_NAMES[g], RAIL_X + 14, BODY_TOP - GROUP_DY[g], -1, BRASS, 1f);
         for (int i = 0; i < TAB_NAMES.length; i++) {
             float cy = railY(i);
-            boolean on = i == tab, hot = hoverRegion == TAB && hoverRow == i && probeSub < 0;
-            if (on) leftGold(b, TAB_NAMES[i], RAIL_X + 18, cy, 1f);
-            else left(b, TAB_NAMES[i], RAIL_X + 18, cy, hot ? 1f : UiTheme.A_LINE);
+            boolean on = i == tab;
+            tinted(b, TAB_NAMES[i], RAIL_X + 24, cy, -1, on ? Puranic.INK : CREAM, on ? 1f : 0.92f);
             String c = railCount(i, h, loka);
-            if (!c.isEmpty()) right(b, c, DIV_X - 16, cy, on ? UiTheme.A_LINE : UiTheme.A_HINT);
+            if (!c.isEmpty()) tinted(b, c, DIV_X - 20, cy, 1, on ? Puranic.INK : BRASS, 1f);
         }
     }
 
@@ -1449,7 +1458,7 @@ public final class ShopUi {
         x0 = bayX(2);
         cx = x0 + BAY_CW / 2f;
         left(b, "ASTRA", x0 + 16, top - 22, UiTheme.A_HINT);
-        b.draw(ui.icons.shard(el), cx - 32, top - 118 - 32, 64, 64);
+        b.draw(ui.icons.shardUi(el), cx - 32, top - 118 - 32, 64, 64);
         center(b, World.TATVA[el].toUpperCase(), cx, top - 192, 1f);
         if (validLoka(loka) && h.forgeCharges[loka] > 0)
             centerGold(b, forgeNext(h, loka), cx, top - 220, 1f);
@@ -1530,8 +1539,8 @@ public final class ShopUi {
         }
         float ly = fleetStatY(n, ShopStats.AXES - 1) - 24;
         tinted(b, "THIS HULL", tx + 22, ly, -1, CREAM, UiTheme.A_LINE);
-        tinted(b, "UPGRADED", tx + 128, ly, -1, BRASS, 1f);
-        if (ship != h.shipIndex) tinted(b, "FLYING", tx + 254, ly, -1, LAVENDER, 1f);
+        tinted(b, "UPGRADED", tx + 162, ly, -1, BRASS, 1f);
+        if (ship != h.shipIndex) tinted(b, "FLYING", tx + 290, ly, -1, LAVENDER, 1f);
 
         left(b, "UPGRADES", ux, head, UiTheme.A_HINT);
         for (int k = 1; k < 3; k++) {
@@ -1597,7 +1606,7 @@ public final class ShopUi {
         float tx = refitTableX();
         float hy2 = bottom - 34;
         left(b, "BEFORE", tx + 80, hy2, UiTheme.A_HINT);
-        left(b, "AFTER", tx + 172, hy2, UiTheme.A_HINT);
+        left(b, "AFTER", tx + 164, hy2, UiTheme.A_HINT);
         right(b, "CHANGE", tx + 292, hy2, UiTheme.A_HINT);
         float[] was = ShopStats.raw(sd, h.owned[ship][1], h.owned[ship][2]);
         float[] will = ShopStats.raw(sd, h.owned[ship][1] || tier == 1, h.owned[ship][2] || tier == 2);
@@ -1689,11 +1698,11 @@ public final class ShopUi {
                     vy, 1, dp >= 0 ? PEACOCK : ROSE, 1f);
             tinted(b, reach, xr, vy, 1, rp >= 0 ? PEACOCK : ROSE, 1f);
         }
-        float fy = PAT_CARD_Y0 + 36;
+        float fy = PAT_CARD_Y0 + 52;
         left(b, ss.rays > 1 ? Math.round(ss.spread) + " deg FAN" : sel.beam ? "BEAM" : "STRAIGHT",
                 PAT_CARD_X + 20, fy - 26, UiTheme.A_HINT);
         left(b, "2 SECONDS OF FIRE", PAT_CARD_X + 116, fy - 26, UiTheme.A_HINT);
-        left(b, "NUMBERS WITH YOUR HULL", xl, patChartY(3) - 30, UiTheme.A_HINT);
+        left(b, "NUMBERS WITH YOUR HULL", xl, patChartY(3) - 26, UiTheme.A_HINT);
 
         if (owned) answer(b, weaponBuyLine(h, sel), false);
         else {
@@ -1715,7 +1724,7 @@ public final class ShopUi {
             if (cur) centerGold(b, name, cx, y1 - 22, 1f);
             else center(b, name, cx, y1 - 22, a);
             b.setColor(1, 1, 1, a);
-            b.draw(ui.icons.shard(lel), cx - 22, y1 - 92 - 22, 44, 44);
+            b.draw(ui.icons.shardUi(lel), cx - 22, y1 - 92 - 22, 44, 44);
             b.setColor(1, 1, 1, 1);
             center(b, World.TATVA[lel].toUpperCase(), cx, y1 - 136, UiTheme.A_HINT);
             if (cur && h.forgeCharges[l] > 0) centerGold(b, forgeCardState(h, l), cx, y1 - 186, 1f);
@@ -1749,7 +1758,7 @@ public final class ShopUi {
             float cy = vaultRowY(i);
             int held = i < h.shards.length ? h.shards[i] : 0;
             total += held;
-            b.draw(ui.icons.shard(i), BODY_X + 12, cy - 11, 22, 22);
+            b.draw(ui.icons.shardUi(i), BODY_X + 12, cy - 11, 22, 22);
             if (i == cur) leftGold(b, World.TATVA[i].toUpperCase(), BODY_X + 44, cy, 1f);
             else left(b, World.TATVA[i].toUpperCase(), BODY_X + 44, cy, UiTheme.A_LINE);
             right(b, Integer.toString(held), BODY_X + 360, cy, held > 0 ? 1f : UiTheme.A_HINT);

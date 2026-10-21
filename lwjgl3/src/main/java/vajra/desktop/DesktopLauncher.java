@@ -12,6 +12,7 @@ public class DesktopLauncher {
         config.setWindowIcon("vajra_ships/mk_1/ship_1.png");
         config.setWindowedMode(1920, 1080); // HD home; F12 swaps 1280x720, F11 fullscreen
         config.useVsync(true);
+        config.setBackBufferConfig(8, 8, 8, 8, 16, 0, 4); // 4x MSAA: the bazaar is vector, and smooth
         config.setForegroundFPS(60);
         new Lwjgl3Application(new VajraGame(), config);
     }
